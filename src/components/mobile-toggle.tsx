@@ -34,7 +34,16 @@ export const MobileToggle = ({
           <Menu />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="p-0 flex gap-0">
+      <SheetContent 
+        side="left" 
+        className="p-0 flex gap-0"
+        onInteractOutside={(e) => {
+          const actualTarget = (e as any).detail?.originalEvent?.target as HTMLElement;
+          if (actualTarget?.closest?.('.cl-rootBox, .cl-userButtonPopoverContainer, .cl-userButtonPopoverCard, .cl-popoverBox, [class*="cl-"]')) {
+            e.preventDefault();
+          }
+        }}
+      >
         {children}
       </SheetContent>
     </Sheet>
