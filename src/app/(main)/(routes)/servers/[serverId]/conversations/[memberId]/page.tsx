@@ -26,8 +26,7 @@ const MemberIdPage = async ({
   const profile = await currentProfile();
 
   if (!profile) {
-    const { redirectToSignIn } = await auth();
-    return redirectToSignIn();
+    return redirect("/");
   }
 
   const { serverId, memberId } = await params;
