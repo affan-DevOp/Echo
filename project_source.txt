@@ -1,0 +1,4178 @@
+﻿
+=== src\app\(auth)\(routes)\sign-in\[[...sign-in]]\page.tsx ===
+
+=== src\app\(auth)\(routes)\sign-up\[[...sign-up]]\page.tsx ===
+
+=== src\app\(auth)\layout.tsx ===
+const AuthLayout = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      {children}
+    </div>
+  );
+}
+
+export default AuthLayout;
+
+=== src\app\(invite)\(routes)\invite\[inviteCode]\page.tsx ===
+const AuthLayout = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      {children}
+    </div>
+  );
+}
+
+export default AuthLayout;
+
+=== src\app\(main)\(routes)\servers\[serverId]\layout.tsx ===
+const AuthLayout = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      {children}
+    </div>
+  );
+}
+
+export default AuthLayout;
+
+=== src\app\(main)\(routes)\servers\[serverId]\page.tsx ===
+const AuthLayout = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      {children}
+    </div>
+  );
+}
+
+export default AuthLayout;
+
+=== src\app\(main)\layout.tsx ===
+import { NavigationSidebar } from "@/components/navigation/navigation-sidebar";
+const MainLayout = async ({
+    children
+}: {
+    children: React.ReactNode;
+}) => {
+    return (
+        <div className="h-full">
+            <div className="flex max-md:hidden h-full w-[72px] z-30 flex-col fixed inset-y-0">
+                <NavigationSidebar />       
+            </div>
+            <main className="pl-[72px] max-md:pl-0 h-full">
+             {children}
+            </main>
+        </div>
+    );
+};
+
+export default MainLayout;
+=== src\app\(setup)\page.tsx ===
+import { initialProfile } from "@/lib/initial-profile";
+import { db } from "@/lib/db";
+import { redirect } from "next/navigation";
+import { InitialModal } from "@/components/modals/initial-modal";
+
+const SetupPage = async () => {
+    const profile = await initialProfile();
+    const server = await db.server.findFirst({
+        where: {
+            members: {
+                some: {
+                    profileId: profile.id
+                }
+            }
+        }
+    });
+
+    if (server) {
+        return redirect(`/servers/${server.id}`);
+    }
+
+    return <InitialModal />;
+};
+
+export default SetupPage;
+=== src\app\api\channels\route.ts ===
+import { currentProfile } from "@/lib/current-profile";
+import db from "@/lib/db";
+import { MemberRole } from "@prisma/client";
+import { NextResponse } from "next/server";
+
+export async function POST(req: Request) {
+    try {
+        const profile = await currentProfile();
+        const { name, type } = await req.json();
+        const {searchParams} = new URL(req.url);
+        const serverId = searchParams.get("serverId");
+
+        if (!profile) return new NextResponse("Unauthorized", { status: 401 });
+        if (name === "general") return new NextResponse("Invalid name", { status: 400 });
+        if (!type) return new NextResponse("Invalid type", { status: 400 });
+        if (!serverId) return new NextResponse("Invalid serverId", { status: 400 });
+
+        const server = await db.server.update({
+            where: {
+                id: serverId,
+                members: {
+                    some: {
+                        profileId: profile.id,
+                        role: {
+                            in: [MemberRole.ADMIN,MemberRole.MODERATOR],
+                        }
+                    }
+                }
+            },
+            data: {
+                channels: {
+                    create: {
+                        name,
+                        type,
+                        profileId: profile.id,
+                    }
+                }
+            }
+        })
+        return NextResponse.json(server);
+    } catch (error) {
+        console.log("CHANNEL_POST", error);
+        return new NextResponse("Internal Server Error", { status: 500 });
+    }
+}
+=== src\app\api\members\[memberId]\route.ts ===
+import { currentProfile } from "@/lib/current-profile";
+import db from "@/lib/db";
+import { MemberRole } from "@prisma/client";
+import { NextResponse } from "next/server";
+
+export async function POST(req: Request) {
+    try {
+        const profile = await currentProfile();
+        const { name, type } = await req.json();
+        const {searchParams} = new URL(req.url);
+        const serverId = searchParams.get("serverId");
+
+        if (!profile) return new NextResponse("Unauthorized", { status: 401 });
+        if (name === "general") return new NextResponse("Invalid name", { status: 400 });
+        if (!type) return new NextResponse("Invalid type", { status: 400 });
+        if (!serverId) return new NextResponse("Invalid serverId", { status: 400 });
+
+        const server = await db.server.update({
+            where: {
+                id: serverId,
+                members: {
+                    some: {
+                        profileId: profile.id,
+                        role: {
+                            in: [MemberRole.ADMIN,MemberRole.MODERATOR],
+                        }
+                    }
+                }
+            },
+            data: {
+                channels: {
+                    create: {
+                        name,
+                        type,
+                        profileId: profile.id,
+                    }
+                }
+            }
+        })
+        return NextResponse.json(server);
+    } catch (error) {
+        console.log("CHANNEL_POST", error);
+        return new NextResponse("Internal Server Error", { status: 500 });
+    }
+}
+=== src\app\api\servers\[serverId]\invite-code\route.ts ===
+import { currentProfile } from "@/lib/current-profile";
+import db from "@/lib/db";
+import { MemberRole } from "@prisma/client";
+import { NextResponse } from "next/server";
+
+export async function POST(req: Request) {
+    try {
+        const profile = await currentProfile();
+        const { name, type } = await req.json();
+        const {searchParams} = new URL(req.url);
+        const serverId = searchParams.get("serverId");
+
+        if (!profile) return new NextResponse("Unauthorized", { status: 401 });
+        if (name === "general") return new NextResponse("Invalid name", { status: 400 });
+        if (!type) return new NextResponse("Invalid type", { status: 400 });
+        if (!serverId) return new NextResponse("Invalid serverId", { status: 400 });
+
+        const server = await db.server.update({
+            where: {
+                id: serverId,
+                members: {
+                    some: {
+                        profileId: profile.id,
+                        role: {
+                            in: [MemberRole.ADMIN,MemberRole.MODERATOR],
+                        }
+                    }
+                }
+            },
+            data: {
+                channels: {
+                    create: {
+                        name,
+                        type,
+                        profileId: profile.id,
+                    }
+                }
+            }
+        })
+        return NextResponse.json(server);
+    } catch (error) {
+        console.log("CHANNEL_POST", error);
+        return new NextResponse("Internal Server Error", { status: 500 });
+    }
+}
+=== src\app\api\servers\[serverId]\leave\route.ts ===
+import { currentProfile } from "@/lib/current-profile";
+import db from "@/lib/db";
+import { MemberRole } from "@prisma/client";
+import { NextResponse } from "next/server";
+
+export async function POST(req: Request) {
+    try {
+        const profile = await currentProfile();
+        const { name, type } = await req.json();
+        const {searchParams} = new URL(req.url);
+        const serverId = searchParams.get("serverId");
+
+        if (!profile) return new NextResponse("Unauthorized", { status: 401 });
+        if (name === "general") return new NextResponse("Invalid name", { status: 400 });
+        if (!type) return new NextResponse("Invalid type", { status: 400 });
+        if (!serverId) return new NextResponse("Invalid serverId", { status: 400 });
+
+        const server = await db.server.update({
+            where: {
+                id: serverId,
+                members: {
+                    some: {
+                        profileId: profile.id,
+                        role: {
+                            in: [MemberRole.ADMIN,MemberRole.MODERATOR],
+                        }
+                    }
+                }
+            },
+            data: {
+                channels: {
+                    create: {
+                        name,
+                        type,
+                        profileId: profile.id,
+                    }
+                }
+            }
+        })
+        return NextResponse.json(server);
+    } catch (error) {
+        console.log("CHANNEL_POST", error);
+        return new NextResponse("Internal Server Error", { status: 500 });
+    }
+}
+=== src\app\api\servers\[serverId]\route.ts ===
+import { currentProfile } from "@/lib/current-profile";
+import db from "@/lib/db";
+import { MemberRole } from "@prisma/client";
+import { NextResponse } from "next/server";
+
+export async function POST(req: Request) {
+    try {
+        const profile = await currentProfile();
+        const { name, type } = await req.json();
+        const {searchParams} = new URL(req.url);
+        const serverId = searchParams.get("serverId");
+
+        if (!profile) return new NextResponse("Unauthorized", { status: 401 });
+        if (name === "general") return new NextResponse("Invalid name", { status: 400 });
+        if (!type) return new NextResponse("Invalid type", { status: 400 });
+        if (!serverId) return new NextResponse("Invalid serverId", { status: 400 });
+
+        const server = await db.server.update({
+            where: {
+                id: serverId,
+                members: {
+                    some: {
+                        profileId: profile.id,
+                        role: {
+                            in: [MemberRole.ADMIN,MemberRole.MODERATOR],
+                        }
+                    }
+                }
+            },
+            data: {
+                channels: {
+                    create: {
+                        name,
+                        type,
+                        profileId: profile.id,
+                    }
+                }
+            }
+        })
+        return NextResponse.json(server);
+    } catch (error) {
+        console.log("CHANNEL_POST", error);
+        return new NextResponse("Internal Server Error", { status: 500 });
+    }
+}
+=== src\app\api\servers\route.ts ===
+import { v4 as uuidv4 } from "uuid";
+import { currentProfile } from "@/lib/current-profile";
+import { db } from "@/lib/db";
+import { NextResponse } from "next/server";
+import { MemberRole } from "@prisma/client";
+
+export async function POST(req: Request) {
+    try {
+        const profile = await currentProfile();
+        const {name, imageUrl} = await req.json();
+        
+        if(!profile) return new NextResponse("Unauthorized", {status: 401});
+        
+        const server = await db.server.create({
+            data: {
+                name,
+                imageUrl,
+                profileId: profile.id,
+                inviteCode: uuidv4(),
+                channels:{
+                create:[
+                    {name: "general", profileId: profile.id}
+                       ]
+                   },
+                members:{
+                    create:[
+                        {profileId: profile.id, role: MemberRole.ADMIN}
+                    ]
+                }   
+                
+            }
+        });
+        
+        return NextResponse.json(server);
+    } catch (error) {
+        console.log(error);
+        return new NextResponse("Internal Server Error", {status: 500});
+    }
+}   
+=== src\app\api\uploadthing\core.ts ===
+import { auth } from "@clerk/nextjs/server";  
+import { createUploadthing, type FileRouter } from "uploadthing/next";
+import { UploadThingError } from "uploadthing/server";
+
+const f = createUploadthing();
+
+const handleAuth = async () => {
+    const { userId } = await auth();
+
+    if(!userId) throw new Error("Unauthorized");
+    
+    return { userId };
+}
+
+export const ourFileRouter = {
+ serverImage: f({
+    image: {
+        maxFileSize: "4MB",
+        maxFileCount: 1,
+    }
+ }).middleware(handleAuth).onUploadComplete(() => { return { success: true }; }),
+ messageFile: f([
+    "image","pdf"
+ ]).middleware(handleAuth).onUploadComplete(() => { return { success: true }; })
+
+} satisfies FileRouter;
+
+export type OurFileRouter = typeof ourFileRouter;
+
+=== src\app\api\uploadthing\route.ts ===
+import { createRouteHandler } from "uploadthing/next";
+
+import { ourFileRouter } from "./core";
+
+// Export routes for Next App Router
+export const { GET, POST } = createRouteHandler({
+  router: ourFileRouter,
+
+  // Apply an (optional) custom config:
+  // config: { ... },
+});
+
+=== src\app\layout.tsx ===
+import { ClerkProvider } from "@clerk/nextjs";
+
+import type { Metadata } from "next";
+import { Open_Sans } from "next/font/google";
+import "./globals.css";
+import { ThemeProvider } from "@/components/providers/theme-provider";
+import { cn } from "cn";
+import { ModalProvider } from "@/components/providers/modal-provider";
+
+const font = Open_Sans({
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Create Next App",
+  description: "Generated by create next app",
+};
+
+export default function RootLayout({ children }: LayoutProps<"/">) {
+  return (
+    <html
+      lang="en" suppressHydrationWarning
+      className={cn(font.className, "h-full antialiased")}
+    >
+      <body className={cn("min-h-full flex flex-col", "bg-white dark:bg-[#313338]")}>
+        <ClerkProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem={false}
+            storageKey="discord-theme"
+            disableTransitionOnChange
+          >
+            <ModalProvider/>
+            {children}
+          </ThemeProvider>
+        </ClerkProvider>
+      </body>
+    </html>
+  );
+}
+=== src\components\modals\create-channel-modal.tsx ===
+"use client";
+
+import axios from "axios";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { useParams, useRouter } from "next/navigation";
+import { useModal } from "@/hooks/use-modal-store";
+import { ChannelType } from "@prisma/client";
+import { useEffect } from "react";
+import qs from "query-string";
+
+import{
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from "@/components/ui/select";
+
+import{
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+
+import {
+    FormControl,
+    FormLabel,
+    FormMessage,
+    FormField,
+    FormItem,
+    Form
+} from "@/components/ui/form";
+
+import {
+    Input
+} from "@/components/ui/input";
+
+import {
+    Button
+} from "@/components/ui/button";
+
+
+const formSchema = z.object({
+    name: z.string().min(1, {
+        message: "Channel name is required",
+    }).refine(
+        name => name !== "general",
+        {
+            message: "Channel name cannot be general"
+        }
+    ),
+    type: z.nativeEnum(ChannelType, {
+        message: "Channel type is required",
+    }),
+});
+
+export const CreateChannelModal = () => {
+    const {isOpen, onClose, type, data} = useModal();
+    const router = useRouter();
+    const params = useParams();
+    const isModalOpen = isOpen && type === "createChannel";
+    const { channelType } = data;
+
+    const form = useForm({
+        defaultValues: {
+            name: "",
+            type: channelType || ChannelType.TEXT, 
+        },
+        resolver: zodResolver(formSchema),
+    });
+
+    useEffect(() => {
+        if (channelType) {
+            form.setValue("type", channelType);
+        } else {
+            form.setValue("type", ChannelType.TEXT);
+        }
+    }, [channelType, form]);
+
+    const isLoading = form.formState.isSubmitting;
+    const onSubmit = async (values: z.infer<typeof formSchema>) => {
+        try {
+            const url = qs.stringifyUrl({
+                url: "/api/channels",
+                query: {
+                    serverId: params?.serverId
+                }
+            });
+            await axios.post(url, values);
+            form.reset();
+            router.refresh();
+            onClose();
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    const handleClose = () => {
+        form.reset();
+        onClose();
+    }
+
+    return (
+        <Dialog open = {isModalOpen} onOpenChange={handleClose}>
+            <DialogContent className="bg-white text-black p-0 overflow-hidden">
+                <DialogHeader className="pt-8 px-6">
+                    <DialogTitle className="text-2xl text-center font-bold">
+                        Create Channel
+                    </DialogTitle>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                        <div className="space-y-8 px-6">
+                          <FormField
+                          control={form.control}
+                          name="name"
+                          render={({field}) => (
+                            <FormItem>
+                              <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-secondary/70">
+                                Channel name
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                disabled={isLoading}
+                                className="!bg-zinc-200 border-0 focus-visible:ring-0 text-black focus-visible:ring-offset-0"
+                                placeholder="Enter channel name"
+                                {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                          />
+                          <FormField
+                          control={form.control}
+                          name="type"
+                          render={({field}) => (
+                            <FormItem>
+                              <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-secondary/70">
+                                Channel Type
+                              </FormLabel>
+                              <Select
+                              disabled={isLoading}
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                              value={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="!bg-zinc-200 border-0 focus:ring-0 text-black ring-offset-0 capitalize outline-none">
+                                    <SelectValue placeholder="Select a channel type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {Object.values(ChannelType).map((type) => (
+                                    <SelectItem key={type} value={type}
+                                    className="capitalize cursor-pointer"
+                                    >
+                                      {type.toLowerCase()}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                          />
+                        </div>
+                        <DialogFooter className="bg-gray-100 px-6 py-4">
+                            <Button variant="primary" disabled={isLoading}>
+                                Create
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+};
+=== src\components\modals\create-server-modal.tsx ===
+"use client";
+
+import axios from "axios";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { FileUpload } from "@/components/file-upload";
+import { useRouter } from "next/navigation";
+import { useModal } from "@/hooks/use-modal-store";
+
+import{
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+
+import {
+    FormControl,
+    FormLabel,
+    FormMessage,
+    FormField,
+    FormItem,
+    Form
+} from "@/components/ui/form";
+
+import {
+    Input
+} from "@/components/ui/input";
+
+import {
+    Button
+} from "@/components/ui/button";
+
+
+const formSchema = z.object({
+    name: z.string().min(1, {
+        message: "Server name is required",
+    }),
+    imageUrl: z.string().min(1, {
+        message: "Server image is required",
+    }),
+});
+
+export const CreateServerModal = () => {
+    const {isOpen, onClose, type} = useModal();
+    const router = useRouter();
+    const isModalOpen = isOpen && type === "createServer";
+
+    const form = useForm({
+        defaultValues: {
+            name: "",
+            imageUrl: "",
+        },
+        resolver: zodResolver(formSchema),
+    });
+
+    const isLoading = form.formState.isSubmitting;
+    const onSubmit = async (values: z.infer<typeof formSchema>) => {
+        try {
+            await axios.post("/api/servers", values);
+            form.reset();
+            router.refresh();
+            onClose();
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    const handleClose = () => {
+        form.reset();
+        onClose();
+    }
+
+    return (
+        <Dialog open = {isModalOpen} onOpenChange={handleClose}>
+            <DialogContent className="bg-white text-black p-0 overflow-hidden">
+                <DialogHeader className="pt-8 px-6">
+                    <DialogTitle className="text-2xl text-center font-bold">
+                        Create a Server
+                    </DialogTitle>
+                    <DialogDescription className="text-center text-zinc-500">
+                        Give your server a personality. You can always change it later.
+                    </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                        <div className="space-y-8 px-6">
+                          <div className="flex items-center justify-center text-center">
+                            <FormField
+                            control={form.control}
+                            name="imageUrl"
+                            render={({field}) => (
+                                <FormItem>
+                                    <FormControl>
+                                        <FileUpload
+                                        endpoint="serverImage"
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                          </div>
+                          <FormField
+                          control={form.control}
+                          name="name"
+                          render={({field}) => (
+                            <FormItem>
+                              <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-secondary/70">
+                                Server name
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                disabled={isLoading}
+                                className="!bg-zinc-200 border-0 focus-visible:ring-0 text-black focus-visible:ring-offset-0"
+                                placeholder="Enter server name"
+                                {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                          />
+                        </div>
+                        <DialogFooter className="bg-gray-100 px-6 py-4">
+                            <Button variant="primary" disabled={isLoading}>
+                                Create
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+};
+=== src\components\modals\delete-server-modal.tsx ===
+"use client";
+
+import { useModal } from "@/hooks/use-modal-store";
+
+import{
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+
+
+import {
+    Button
+} from "@/components/ui/button";
+import { useState } from "react";
+import axios from "axios";
+import {useRouter} from "next/navigation";
+
+export const DeleteServerModal = () => {
+    const {isOpen, onClose, type, data} = useModal();
+    const router = useRouter();
+    const isModalOpen = isOpen && type === "deleteServer";
+    const {server} = data;
+
+    const [loading, setLoading] = useState(false);
+
+    const onClick = async () => {
+        try {
+            setLoading(true);
+            await axios.delete(`/api/servers/${server?.id}`);
+            onClose();
+            router.refresh();
+            router.push("/");
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+
+    return (
+        <Dialog open = {isModalOpen} onOpenChange={onClose}>
+            <DialogContent className="bg-white text-black p-0 overflow-hidden">
+                <DialogHeader className="pt-8 px-6">
+                    <DialogTitle className="text-2xl text-center font-bold">
+                        Delete Server
+                    </DialogTitle>
+                    <DialogDescription className="text-center text-zinc-500">
+                        Are you sure you want to do this? <br/>
+                        This server <span className="font-semibold text-indigo-500 px-1">{server?.name}</span> and all of its channels and messages will be permanently deleted.
+                    </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="bg-gray-100 px-6 py-4">
+                    <div className="flex items-center justify-between w-full">
+                        <Button
+                        variant="ghost"
+                        onClick={onClose}
+                        disabled={loading}
+                        className="border border-zinc-300 dark:border-zinc-700"
+                        >
+                        Cancel
+                        </Button>
+                        <Button
+                        variant="primary"
+                        onClick={onClick}
+                        disabled={loading}
+                        >
+                        Confirm
+                        </Button>
+                    </div>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+=== src\components\modals\edit-server-modal.tsx ===
+"use client";
+
+import axios from "axios";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { FileUpload } from "@/components/file-upload";
+import { useRouter } from "next/navigation";
+import { useModal } from "@/hooks/use-modal-store";
+
+import{
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+
+import {
+    FormControl,
+    FormLabel,
+    FormMessage,
+    FormField,
+    FormItem,
+    Form
+} from "@/components/ui/form";
+
+import {
+    Input
+} from "@/components/ui/input";
+
+import {
+    Button
+} from "@/components/ui/button";
+import { useEffect } from "react";
+
+
+const formSchema = z.object({
+    name: z.string().min(1, {
+        message: "Server name is required",
+    }),
+    imageUrl: z.string().min(1, {
+        message: "Server image is required",
+    }),
+});
+
+export const EditServerModal = () => {
+    const {isOpen, onClose, type, data} = useModal();
+    const router = useRouter();
+    const isModalOpen = isOpen && type === "editServer";
+    
+    const { server } = data;
+
+    const form = useForm({
+        defaultValues: {
+            name: "",
+            imageUrl: "",
+        },
+        resolver: zodResolver(formSchema),
+    });
+
+    useEffect(() => {
+        if(server){
+            form.setValue("name", server.name);
+            form.setValue("imageUrl", server.imageUrl);
+        }
+    }, [server, form]);
+
+    const isLoading = form.formState.isSubmitting;
+    const onSubmit = async (values: z.infer<typeof formSchema>) => {
+        try {
+            await axios.patch(`/api/servers/${server?.id}`, values);
+            form.reset();
+            router.refresh();
+            onClose();
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    const handleClose = () => {
+        form.reset();
+        onClose();
+    }
+
+    return (
+        <Dialog open = {isModalOpen} onOpenChange={handleClose}>
+            <DialogContent className="bg-white text-black p-0 overflow-hidden">
+                <DialogHeader className="pt-8 px-6">
+                    <DialogTitle className="text-2xl text-center font-bold">
+                        Create a Server
+                    </DialogTitle>
+                    <DialogDescription className="text-center text-zinc-500">
+                        Give your server a personality. You can always change it later.
+                    </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                        <div className="space-y-8 px-6">
+                          <div className="flex items-center justify-center text-center">
+                            <FormField
+                            control={form.control}
+                            name="imageUrl"
+                            render={({field}) => (
+                                <FormItem>
+                                    <FormControl>
+                                        <FileUpload
+                                        endpoint="serverImage"
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                          </div>
+                          <FormField
+                          control={form.control}
+                          name="name"
+                          render={({field}) => (
+                            <FormItem>
+                              <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-secondary/70">
+                                Server name
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                disabled={isLoading}
+                                className="!bg-zinc-200 border-0 focus-visible:ring-0 text-black focus-visible:ring-offset-0"
+                                placeholder="Enter server name"
+                                {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                          />
+                        </div>
+                        <DialogFooter className="bg-gray-100 px-6 py-4">
+                            <Button variant="primary" disabled={isLoading}>
+                                Save
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+};
+=== src\components\modals\initial-modal.tsx ===
+"use client";
+
+import axios from "axios";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { useState, useEffect } from "react";
+import { FileUpload } from "@/components/file-upload";
+import { useRouter } from "next/navigation";
+
+import{
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+
+import {
+    FormControl,
+    FormLabel,
+    FormMessage,
+    FormField,
+    FormItem,
+    Form
+} from "@/components/ui/form";
+
+import {
+    Input
+} from "@/components/ui/input";
+
+import {
+    Button
+} from "@/components/ui/button";
+
+
+const formSchema = z.object({
+    name: z.string().min(1, {
+        message: "Server name is required",
+    }),
+    imageUrl: z.string().min(1, {
+        message: "Server image is required",
+    }),
+});
+
+export const InitialModal = () => {
+    const [isMounted, setIsMounted] = useState(false);
+    const router = useRouter();
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+    const form = useForm({
+        defaultValues: {
+            name: "",
+            imageUrl: "",
+        },
+        resolver: zodResolver(formSchema),
+    });
+
+    const isLoading = form.formState.isSubmitting;
+    const onSubmit = async (values: z.infer<typeof formSchema>) => {
+        try {
+            await axios.post("/api/servers", values);
+            form.reset();
+            router.refresh();
+            window.location.reload();
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    if (!isMounted) return null;
+    return (
+        <Dialog open>
+            <DialogContent className="bg-white text-black p-0 overflow-hidden">
+                <DialogHeader className="pt-8 px-6">
+                    <DialogTitle className="text-2xl text-center font-bold">
+                        Create a Server
+                    </DialogTitle>
+                    <DialogDescription className="text-center text-zinc-500">
+                        Give your server a personality. You can always change it later.
+                    </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                        <div className="space-y-8 px-6">
+                          <div className="flex items-center justify-center text-center">
+                            <FormField
+                            control={form.control}
+                            name="imageUrl"
+                            render={({field}) => (
+                                <FormItem>
+                                    <FormControl>
+                                        <FileUpload
+                                        endpoint="serverImage"
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                          </div>
+                          <FormField
+                          control={form.control}
+                          name="name"
+                          render={({field}) => (
+                            <FormItem>
+                              <FormLabel className="uppercase text-xs font-bold text-zinc-500 dark:text-secondary/70">
+                                Server name
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                disabled={isLoading}
+                                className="!bg-zinc-200 border-0 focus-visible:ring-0 text-black focus-visible:ring-offset-0"
+                                placeholder="Enter server name"
+                                {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                          />
+                        </div>
+                        <DialogFooter className="bg-gray-100 px-6 py-4">
+                            <Button variant="primary" disabled={isLoading}>
+                                Create
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+};
+=== src\components\modals\invite-modal.tsx ===
+"use client";
+
+import { useModal } from "@/hooks/use-modal-store";
+
+import{
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+
+import {
+    Input
+} from "@/components/ui/input";
+
+import {
+    Button
+} from "@/components/ui/button";
+import { Label } from "../ui/label";
+import { Check, Copy, RefreshCw } from "lucide-react";
+import { useOrigin } from "@/hooks/use-origin";
+import { useState } from "react";
+import axios from "axios";
+
+export const InviteModal = () => {
+    const {onOpen,isOpen, onClose, type, data} = useModal();
+    const isModalOpen = isOpen && type === "invite";
+    const origin = useOrigin();
+    const {server} = data;
+
+    const [copied, setCopied] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const inviteUrl = `${origin}/invite/` + server?.inviteCode;
+
+    const onCopy = () => {
+        navigator.clipboard.writeText(inviteUrl);
+        setCopied(true);
+
+        setTimeout(() => {
+            setCopied(false);
+        }, 1000);
+    }
+
+    const onNew = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.patch(`/api/servers/${server?.id}/invite-code`);
+
+            onOpen("invite", { server: response.data });
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    return (
+        <Dialog open = {isModalOpen} onOpenChange={onClose}>
+            <DialogContent className="bg-white text-black p-0 overflow-hidden">
+                <DialogHeader className="pt-8 px-6">
+                    <DialogTitle className="text-2xl text-center font-bold">
+                        Invite Friends
+                    </DialogTitle>
+                </DialogHeader>
+                <div className="p-6">
+                 <Label
+                 className="uppercase text-xs font-bold text-zinc-500 dark:text-secondary/70">
+                    Server invite link
+                 </Label>
+                 <div className="flex items-center gap-x-2 mt-2">
+                    <Input
+                    disabled={loading}
+                    readOnly
+                    className="!bg-zinc-200 border-0 focus-visible:ring-0 text-black focus-visible:ring-offset-0"
+                    value={inviteUrl}
+                    />
+                    <Button disabled={loading} onClick={onCopy} size="icon">
+                        {copied ? (
+                            <Check className="w-4 h-4"/>
+                        ) : (
+                            <Copy className="w-4 h-4"/>
+                        )}
+                    </Button>
+                 </div>
+                 <Button
+                 disabled={loading}
+                 onClick={onNew}
+                 variant="link"
+                 size="sm"
+                 className="text-xs text-zinc-500 mt-4"
+                 >
+                    Generate a new link
+                    <RefreshCw className="w-4 h-4 ml-2"/>
+                 </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
+=== src\components\modals\leave-server-modal.tsx ===
+"use client";
+
+import { useModal } from "@/hooks/use-modal-store";
+
+import{
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+
+
+import {
+    Button
+} from "@/components/ui/button";
+import { useState } from "react";
+import axios from "axios";
+import {useRouter} from "next/navigation";
+
+export const LeaveServerModal = () => {
+    const {isOpen, onClose, type, data} = useModal();
+    const router = useRouter();
+    const isModalOpen = isOpen && type === "leaveServer";
+    const {server} = data;
+
+    const [loading, setLoading] = useState(false);
+
+    const onClick = async () => {
+        try {
+            setLoading(true);
+            await axios.patch(`/api/servers/${server?.id}/leave`);
+            onClose();
+            router.refresh();
+            router.push("/");
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+
+    return (
+        <Dialog open = {isModalOpen} onOpenChange={onClose}>
+            <DialogContent className="bg-white text-black p-0 overflow-hidden">
+                <DialogHeader className="pt-8 px-6">
+                    <DialogTitle className="text-2xl text-center font-bold">
+                        Leave Server
+                    </DialogTitle>
+                    <DialogDescription className="text-center text-zinc-500">
+                        Are you sure you want to leave <span className="font-semibold text-indigo-500 px-1">{server?.name}</span>?
+                    </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="bg-gray-100 px-6 py-4">
+                    <div className="flex items-center justify-between w-full">
+                        <Button
+                        variant="ghost"
+                        onClick={onClose}
+                        disabled={loading}
+                        className="border border-zinc-300 dark:border-zinc-700"
+                        >
+                        Cancel
+                        </Button>
+                        <Button
+                        variant="primary"
+                        onClick={onClick}
+                        disabled={loading}
+                        >
+                        Confirm
+                        </Button>
+                    </div>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+=== src\components\modals\members-modal.tsx ===
+"use client";
+
+import qs from "query-string";
+import axios from "axios";
+import { useModal } from "@/hooks/use-modal-store";
+
+import{
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import{
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuPortal,
+    DropdownMenuSeparator,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger, 
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+import {
+    Input
+} from "@/components/ui/input";
+
+import {
+    Button
+} from "@/components/ui/button";
+import { Label } from "../ui/label";
+import { Check, Copy, Gavel, Loader2, MoreVertical, RefreshCw, Shield, ShieldAlert, ShieldCheck, ShieldQuestion } from "lucide-react";
+import { ServerWithMembersWithProfiles } from "@/types";
+import { ScrollArea } from "../ui/scroll-area";
+import { UserAvatar } from "../user-avatar";
+import { useState } from "react";
+import { MemberRole } from "@prisma/client";
+import { useRouter } from "next/navigation";
+
+const roleIconMap = {
+    "GUEST": null,
+    "MODERATOR": <ShieldCheck className="h-4 w-4 text-indigo-500"/>,
+    "ADMIN": <ShieldAlert className="h-4 w-4 text-rose-500"/>,
+}
+
+export const MembersModal = () => {
+    const router = useRouter();
+    const {onOpen,isOpen, onClose, type, data} = useModal();
+    const [loadingId, setLoadingId] = useState("");
+
+    const isModalOpen = isOpen && type === "members";
+    const {server} = data as {server : ServerWithMembersWithProfiles};
+
+    const onKick = async (memberId: string) => {
+        try {
+            setLoadingId(memberId);
+            const url = qs.stringifyUrl({
+                url: `/api/members/${memberId}`,
+                query: {
+                    serverId: server?.id,
+                }
+            });
+            const response = await axios.delete(url);
+            router.refresh();
+            onOpen("members", { server: response.data});
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setLoadingId("");
+        }
+    }
+
+    const onRoleChange = async (memberId:string, role: MemberRole) => {
+        try {
+            setLoadingId(memberId);
+            const url = qs.stringifyUrl({
+                url: `/api/members/${memberId}`,
+                query: {
+                    serverId: server?.id,
+                    role,
+                }
+            });
+
+            const response = await axios.patch(url, { role });
+
+            router.refresh();
+            onOpen("members", { server: response.data});
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setLoadingId("");
+        }
+    }
+
+    return (
+        <Dialog open = {isModalOpen} onOpenChange={onClose}>
+            <DialogContent className="bg-white text-black overflow-hidden">
+                <DialogHeader className="pt-8 px-6">
+                    <DialogTitle className="text-2xl text-center font-bold">
+                        Manage Members
+                    </DialogTitle>
+                    <DialogDescription
+                 className="text-center text-zinc-500">
+                    {server?.members?.length} Members
+                </DialogDescription>
+                </DialogHeader>
+            <ScrollArea className="mt-8 max-h-[420px] pr-6">
+                    <div className="mb-6">
+                        {server?.members?.map((member)=>(    
+                            <div key={member.id} className="flex items-center gap-x-2 mb-6">
+                                <UserAvatar src={member.profile.imageUrl}/>
+                                <div className="flex flex-col gap-y-1">
+                                    <div className="text-xs font-semibold flex
+                                    item-center gap-x-1">
+                                        {member.profile.name}
+                                        {roleIconMap[member.role]}
+                                </div>
+                                <p className="text-xs text-zinc-500">
+                                    {member.profile.email}
+                                </p>
+                                </div>
+                                {server.profileId !== member.profileId &&
+                                loadingId !== member.id && (
+                                   <div className="ml-auto">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger>
+                                                <MoreVertical className="h-4 w-4
+                                                text-zinc-500"
+                                                />
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent side = "left">
+                                                <DropdownMenuSub>
+                                                    <DropdownMenuSubTrigger
+                                                    className="flex items-center"
+                                                    >
+                                                        <ShieldQuestion className="h-4 w-4 mr-2"/>
+                                                        <span>Role</span>
+                                                    </DropdownMenuSubTrigger>
+                                                    <DropdownMenuPortal>
+                                                        <DropdownMenuSubContent>
+                                                            <DropdownMenuItem
+                                                            onClick={() => onRoleChange(member.id, "GUEST")}
+                                                            >
+                                                                <Shield className="mr-2 h-4 w-4"/>
+                                                                Guest
+                                                                {member.role === "GUEST" && (
+                                                                    <Check className="ml-auto h-4 w-4"/>
+                                                                )}
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                            onClick={() => onRoleChange(member.id, "MODERATOR")}
+                                                            >
+                                                                <ShieldCheck className="mr-2 h-4 w-4"/>
+                                                                Moderator
+                                                                {member.role === "MODERATOR" && (
+                                                                    <Check className="ml-auto h-4 w-4"/>
+                                                                )}
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuSubContent>
+                                                    </DropdownMenuPortal>
+                                                </DropdownMenuSub>
+                                                <DropdownMenuSeparator/>
+                                                <DropdownMenuItem
+                                                 onClick={() => onKick(member.id)}
+                                                >
+                                                    <Gavel className="h-4 w-4 mr-2"/>
+                                                    Kick
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+                                )}
+                                {loadingId === member.id && (
+                                    <Loader2
+                                    className="animate-spin text-zinc-500 ml-auto
+                                    w-4 h-4"
+                                    />
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </ScrollArea>
+            </DialogContent>
+        </Dialog>
+    );
+};
+=== src\components\navigation\navigation-action.tsx ===
+"use client"
+
+import { Plus } from "lucide-react";
+import { ActionTooltip } from "../action-tooltip"; 
+import { useModal } from "@/hooks/use-modal-store";
+
+export const NavigationAction = () => {
+    const { onOpen } = useModal();
+    return(
+        <ActionTooltip
+        label="Add a Server"
+        side="right"
+        align="center"
+        asChild
+        >
+        <div >
+            <button
+             onClick={() => onOpen("createServer")}
+             className="group flex items-center"
+             >
+                <div className="flex mx-3 h-[48px] w-[48px] rounded-[24px] group-hover:rounded-[16px]
+                transition-all overflow-hidden items-center justify-center bg-background dark:bg-neutral-700 
+                group-hover:bg-emerald-500">
+                   <Plus 
+                   className="text-emerald-500 group-hover:text-white transition"
+                   size={25}
+                   />
+                </div>
+            </button>
+        </div>
+    </ActionTooltip>
+    )
+}
+=== src\components\navigation\navigation-item.tsx ===
+"use client";
+
+import Image from "next/image";
+import { useParams, useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { ActionTooltip } from "../action-tooltip";
+
+interface NavigationItemProps {
+    id: string;
+    name: string;
+    imageUrl: string;
+}
+
+export const NavigationItem = ({
+    id,
+    name,
+    imageUrl
+}: NavigationItemProps) => {
+    const params = useParams();
+    const router = useRouter();
+
+    return (
+        <ActionTooltip
+            label={name}
+            side="right"
+            align="center"
+            asChild
+        >
+            <button
+                onClick={() => {
+                    router.push(`/servers/${id}`);
+                }}
+                className="group relative flex items-center"
+            >
+                <div className={cn(
+                    "absolute left-0 bg-primary rounded-r-full transition-all w-[4px]",
+                    params?.serverId !== id && "group-hover:h-[20px]",
+                    params?.serverId === id ? "h-[36px]" : "h-[8px]"
+                )} />
+                <div className={cn(
+                    "relative group flex mx-3 h-[48px] w-[48px] rounded-[24px] group-hover:rounded-[16px] transition-all overflow-hidden",
+                    params?.serverId === id && "bg-primary/10 text-primary rounded-[16px]"
+                )}>
+                    <Image
+                        fill
+                        src={imageUrl}
+                        alt="Channel"
+                    />
+                </div>
+            </button>
+        </ActionTooltip>
+    );
+};
+=== src\components\navigation\navigation-sidebar.tsx ===
+import { currentProfile } from "@/lib/current-profile";
+
+import { db } from "@/lib/db";
+import { redirect } from "next/navigation";
+import { NavigationAction } from "./navigation-action";
+import { Separator } from "../ui/separator";
+import { ScrollArea } from "../ui/scroll-area";
+import { NavigationItem } from "./navigation-item";
+import { ModeToggle } from "../mode-toggle";
+import { UserButton } from "@clerk/nextjs";
+
+export const NavigationSidebar = async() => {
+    const profile = await currentProfile();
+    
+    if(!profile){
+        return redirect("/");
+    }
+
+    const servers = await db.server.findMany({
+        where: {
+            members: {
+                some: {
+                    profileId: profile.id,
+                }
+            }
+        }
+    });
+
+    return(
+        <div className="space-y-4 flex flex-col items-center h-full text-primary w-full bg-[#E3E5E8] dark:bg-[#1E1F22] py-3">
+           <NavigationAction/>
+           <Separator className="h-[2px] w-10 bg-zinc-300 dark:bg-zinc-700 rounded-md mx-auto"/>
+           <ScrollArea className="flex-1 w-full">
+            {servers.map((server) => (
+                <div key={server.id} className="mb-4">
+                    <NavigationItem
+                    id={server.id}
+                    name={server.name}
+                    imageUrl={server.imageUrl}
+                    />
+                </div>
+            ))}
+           </ScrollArea>
+           <div className="pb-3 mt-auto flex items-center flex-col gap-y-4">
+             <ModeToggle/>
+             <UserButton
+
+             appearance={{
+                elements:{
+                    avatarBox: "!h-[48px] !w-[48px]"
+                }
+             }}
+             />
+           </div>
+        </div>
+    )
+}
+=== src\components\providers\modal-provider.tsx ===
+"use client";
+
+import { useEffect, useState } from "react";
+import { CreateServerModal } from "../modals/create-server-modal";
+import { InviteModal } from "../modals/invite-modal";
+import { EditServerModal } from "../modals/edit-server-modal";
+import { MembersModal } from "../modals/members-modal";
+import { CreateChannelModal } from "../modals/create-channel-modal";
+import { LeaveServerModal } from "../modals/leave-server-modal";
+import { DeleteServerModal } from "../modals/delete-server-modal";
+
+export const ModalProvider = () => {
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    if (!isMounted) {
+        return null;
+    }
+
+    return (
+        <>
+        <CreateServerModal />
+        <InviteModal/>
+        <EditServerModal/>
+        <MembersModal/>
+        <CreateChannelModal/>
+        <LeaveServerModal/>
+        <DeleteServerModal/>
+        </>
+    );
+};
+=== src\components\providers\theme-provider.tsx ===
+"use client"
+
+import * as React from "react"
+import { ThemeProvider as NextThemesProvider } from "next-themes"
+
+export function ThemeProvider({
+    children,
+    ...props
+}: React.ComponentProps<typeof NextThemesProvider>) {
+    return <NextThemesProvider {...props}>{children}</NextThemesProvider>
+}
+=== src\components\server\server-channel.tsx ===
+"use client";
+
+import { Channel, ChannelType, MemberRole, Server } from "@prisma/client";
+import { ActionTooltip } from "../action-tooltip";
+import { useParams, useRouter } from "next/navigation";
+import { Edit, Hash, Lock, Mic, Trash, Video } from "lucide-react";
+import { cn } from "@/lib/utils"; // using standard cn from lib/utils if available, otherwise just use their cn
+
+interface ServerChannelProps {
+    channel: Channel;
+    server: Server;
+    role?: MemberRole;
+}
+
+const iconMap = {
+    [ChannelType.TEXT] : Hash,
+    [ChannelType.AUDIO] : Mic,
+    [ChannelType.VIDEO] : Video
+}
+
+export const ServerChannel = ({
+    channel,
+    server,
+    role,
+}: ServerChannelProps) => {
+    const params = useParams();
+    const router = useRouter();
+
+    const Icon = iconMap[channel.type];
+
+    const onChannelClick = () => {
+        router.push(`/servers/${params?.serverId}/channels/${channel.id}`);
+    }
+
+    return (
+        <button
+        onClick={onChannelClick}
+        className={cn(
+            "group px-2 py-2 rounded-md flex items-center gap-x-2 w-full",
+            "hover:bg-zinc-700/10 dark:hover:bg-zinc-700/50 transition mb-1",
+            params?.channelId === channel.id && "bg-zinc-700/20 dark:bg-zinc-700"
+        )}
+        >
+            <Icon className="flex-shrink-0 w-5 h-5 text-zinc-500 dark:text-zinc-400" />
+            <p className={cn(
+                "line-clamp-1 font-semibold text-sm text-zinc-500 group-hover:text-zinc-600 dark:text-zinc-400 dark:group-hover:text-zinc-300 transition",
+                params?.channelId === channel.id && "text-primary dark:text-zinc-200 dark:group-hover:text-white"
+            )}>
+            {channel.name}
+            </p>
+            {channel.name !== "general" && role !== MemberRole.GUEST && (
+                <div className="ml-auto flex items-center gap-x-2">
+                    <ActionTooltip label="Edit">
+                        <Edit className="hidden group-hover:block w-4 h-4 text-zinc-500 hover:text-zinc-600 dark:text-zinc-400 dark:hover:text-zinc-300 transition" />
+                    </ActionTooltip>
+                    <ActionTooltip label="Delete">
+                        <Trash className="hidden group-hover:block w-4 h-4 text-zinc-500 hover:text-zinc-600 dark:text-zinc-400 dark:hover:text-zinc-300 transition" />
+                    </ActionTooltip>
+                </div>
+            )}
+            {channel.name === "general" && (
+                <Lock className="ml-auto w-4 h-4 text-zinc-500 dark:text-zinc-400" />
+            )}
+        </button>
+    );
+}
+=== src\components\server\server-hearder.tsx ===
+"use client";
+
+import { ServerWithMembersWithProfiles } from "@/types";
+import { MemberRole } from "@prisma/client";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../ui/dropdown-menu";
+import {
+    ChevronDown,
+    LogOut,
+    PlusCircle,
+    Settings,
+    Trash,
+    UserPlus,
+    Users
+} from "lucide-react";
+import { useModal } from "@/hooks/use-modal-store";
+
+interface ServerHeaderProps {
+    server: ServerWithMembersWithProfiles;
+    role?: MemberRole;
+}
+
+export const ServerHeader = ({
+    server,
+    role
+}: ServerHeaderProps) => {
+   const {onOpen} = useModal();
+
+    const isAdmin = role === MemberRole.ADMIN;
+    const isModerator = isAdmin || role === MemberRole.MODERATOR;
+    
+    
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger 
+            className="focus:outline-none"
+            asChild
+            >
+                <button
+                className="w-full text-md font-semibold px-3 flex
+                items-center h-12 border-b-2 border-neutral-200
+                dark:border-neutral-800 transition hover:bg-zinc-700/10
+                dark:hover:bg-zinc-700/50"
+                >
+                    {server.name}
+                    <ChevronDown className="h-5 w-5 ml-auto" />
+                </button>
+                
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+            className="w-56 text-xs font-medium text-black dark:text-neutral-400 space-y-[2px]"
+            >
+             {isModerator && (
+                <DropdownMenuItem
+                onClick={() => onOpen("invite", {server})}
+                className="text-indigo-600 dark:text-indigo-400
+                px-3 py-2 text-sm cursor-pointer"
+                >
+                    Invite People
+                    <UserPlus
+                    className="w-4 h-4 ml-auto"
+                    />
+                </DropdownMenuItem>
+             )}
+             {isAdmin && (
+                <DropdownMenuItem
+                onClick={() => onOpen("editServer",{server})}
+                className="px-3 py-2 text-sm cursor-pointer"
+                >
+                    Server Settings
+                    <Settings
+                    className="w-4 h-4 ml-auto"
+                    />
+                </DropdownMenuItem>
+             )}
+             {isAdmin && (
+                <DropdownMenuItem
+                onClick={() => onOpen("members",{server})}
+                className="px-3 py-2 text-sm cursor-pointer"
+                >
+                    Manage Members
+                    <Users
+                    className="w-4 h-4 ml-auto"
+                    />
+                </DropdownMenuItem>
+             )}
+             {isModerator && (
+                <DropdownMenuItem
+                onClick={() => onOpen("createChannel")}
+                className="px-3 py-2 text-sm cursor-pointer"
+                >
+                    Create Channel
+                    <PlusCircle
+                    className="w-4 h-4 ml-auto"
+                    />
+                </DropdownMenuItem>
+             )}
+             {isModerator && (
+                <DropdownMenuSeparator />
+             )}
+             {isAdmin && (
+                <DropdownMenuItem
+                onClick={() => onOpen("deleteServer", {server})}
+                className="text-red-500 dark:text-red-400
+                px-3 py-2 text-sm cursor-pointer"
+                >
+                    Delete Server
+                    <Trash
+                    className="w-4 h-4 ml-auto"
+                    />
+                </DropdownMenuItem>
+             )}
+             {!isAdmin && (
+                <DropdownMenuItem
+                onClick={() => onOpen("leaveServer", {server})}
+                className="text-red-500 dark:text-red-400
+                px-3 py-2 text-sm cursor-pointer"
+                >
+                    Leave Server
+                    <LogOut
+                    className="w-4 h-4 ml-auto"
+                    />
+                </DropdownMenuItem>
+             )}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    )
+}
+=== src\components\server\server-member.tsx ===
+"use client";
+
+import { Member, MemberRole, Profile, Server } from "@prisma/client";
+import { ShieldAlert, ShieldCheck } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+
+interface ServerMemberProps {
+    member: Member & { profile: Profile };
+    server: Server;
+}
+
+const roleIconMap = {
+    [MemberRole.GUEST]: null,
+    [MemberRole.MODERATOR]: <ShieldCheck className="w-4 h-4 ml-2 text-indigo-500" />,
+    [MemberRole.ADMIN]: <ShieldAlert className="w-4 h-4 ml-2 text-rose-500" />,
+};
+
+export const ServerMember = ({
+    member,
+    server,
+}: ServerMemberProps) => {
+    const params = useParams();
+    const router = useRouter();
+
+    const icon = roleIconMap[member.role];
+
+    const onClick = () => {
+        if (member.id === params?.memberId) {
+            return;
+        }
+    }
+    return (
+        <button
+            onClick={onClick}
+            className="group px-2 py-2 rounded-md flex items-center gap-x-2 w-full hover:bg-zinc-700/10 dark:hover:bg-zinc-700/50 transition mb-1"
+        >
+            <p className="font-semibold text-sm text-zinc-500 group-hover:text-zinc-600 dark:text-zinc-400 dark:group-hover:text-zinc-300 transition">
+                {member.profile.name}
+            </p>
+            {icon}
+        </button>
+    );
+}
+=== src\components\server\server-search.tsx ===
+"use client";
+
+import { Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../ui/command";
+import { useParams, useRouter } from "next/navigation";
+
+interface ServerSearchProps {
+    data : {
+        type : "channel" | "member";
+        label : string;
+        data: {
+            id: string;
+            name: string;
+            icon: React.ReactNode;
+        }[] | undefined
+    }[];
+}
+
+export const ServerSearch = ({
+    data
+    } : ServerSearchProps) => {
+
+    const [open, setOpen] = useState(false);
+    const router = useRouter();
+    const params = useParams();
+
+    useEffect(() => {
+        const down = (e: KeyboardEvent) => {
+            if(e.key === "k" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                setOpen((open) => !open);
+            }
+        }
+        document.addEventListener("keydown", down);
+        return () => document.removeEventListener("keydown", down);
+    }, [])
+
+    const onClick = ({id, type}: {id: string, type: "channel" | "member"}) => {
+        setOpen(false);
+
+        if(type === "channel") {
+            router.push(`/servers/${params?.serverId}/channels/${id}`);
+        }
+
+        if(type === "member") {
+            router.push(`/servers/${params?.serverId}/conversations/${id}`);
+        }
+    }
+
+    return (
+        <>
+        <button
+        onClick={() => setOpen(true)}
+        className="group px-2 py-2 rounded-md flex item-center gap-x-2 w-full hover:bg-zinc-700/10 dark:hover:bg-zinc-700/50 transition"
+        >
+            <Search
+            className="w-4 h-4 text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition"
+            />
+            <p className="font-semibold text-sm text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition">
+                Search
+            </p>
+            <span className="ml-auto
+            ">
+                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-white dark:bg-zinc-800/90 border-gray-200 dark:border-zinc-700 px-1.5 font-mono text-[10px] font-medium text-gray-600 dark:text-gray-400 transition-colors">
+                    <span className="text-xs">âŒ˜</span>
+                    K
+                </kbd> 
+            </span>
+        </button>
+        <CommandDialog open={open} onOpenChange={setOpen}>
+            <CommandInput placeholder="Search all channels and members"/>
+            <CommandList>
+                <CommandEmpty>
+                    No Results found
+                </CommandEmpty>
+                {data.map(({label, type, data}) => {
+                    if(!data?.length) return null;
+
+                    return (
+                        <CommandGroup key={label} heading = {label}>
+                            <CommandList>
+                                {data.map(({id, icon, name}) => {
+                                    return (
+                                        <CommandItem key={id} onSelect={() => onClick({id, type})}>
+                                            {icon}
+                                            <span>{name}</span>
+                                        </CommandItem>
+                                    )
+                                })}
+                            </CommandList>
+                        </CommandGroup>
+                    )
+                })}
+            </CommandList>
+        </CommandDialog>
+        </>
+    );  
+};
+=== src\components\server\server-section.tsx ===
+"use client";
+
+import { ServerWithMembersWithProfiles } from "@/types";
+import { ChannelType, MemberRole } from "@prisma/client";
+import { ActionTooltip } from "../action-tooltip";
+import { Plus, Settings } from "lucide-react";
+import { useModal } from "@/hooks/use-modal-store";
+
+interface ServerSectionProps {
+    label: string;
+    role?: MemberRole;
+    sectionType: "channels" | "members";
+    channelType?: ChannelType;
+    server?: ServerWithMembersWithProfiles;
+}
+
+export const ServerSection = ({
+    label,
+    role,
+    sectionType,
+    channelType,
+    server
+}: ServerSectionProps) => {
+
+   const {onOpen} = useModal();
+
+    return(
+        <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold text-zinc-500 uppercase dark:text-zinc-400">
+                {label}
+            </p>
+            {role !== MemberRole.GUEST && sectionType === "channels" && (
+               <ActionTooltip
+               label = "Create Channel"
+               side="top"
+               align="center"
+               >
+                <button
+                onClick={() => onOpen("createChannel", {channelType})}>
+                    <Plus
+                    className="h-4 w-4 mt-2 text-zinc-500 hover:text-zinc-600
+                    dark:text-zinc-400 dark:hover:text-zinc-300
+                    transition
+                    "/>
+                    </button>
+               </ActionTooltip>
+            )}
+            {role === MemberRole.ADMIN && sectionType === "members" && (
+               <ActionTooltip
+               label = "Manage Members"
+               side="top"
+               align="center"
+               >
+                <button
+                onClick={() => onOpen("members", {server})}>
+                    <Settings
+                    className="h-4 w-4 mt-2 text-zinc-500 hover:text-zinc-600
+                    dark:text-zinc-400 dark:hover:text-zinc-300
+                    transition
+                    "/>
+                    </button>
+               </ActionTooltip>
+            )}
+        </div>
+    )
+}
+=== src\components\server\server-sidebar.tsx ===
+import { currentProfile } from "@/lib/current-profile";
+import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
+import { ServerHeader } from "./server-hearder";
+import { ScrollArea } from "../ui/scroll-area";
+import { ServerSearch } from "./server-search";
+
+import { ChannelType, MemberRole } from "@prisma/client";
+import { Search, Hash, Mic, Video, ShieldCheck, ShieldAlert } from "lucide-react";
+import { Separator } from "../ui/separator";
+import { ServerSection } from "./server-section";
+import { ServerChannel } from "./server-channel";
+import { ServerMember } from "./server-member";
+
+interface ServerSidebarProps {
+    serverId: string;
+}
+
+const iconMap = {
+    [ChannelType.TEXT] : <Hash className="w-4 h-4 mr-2" />,
+    [ChannelType.AUDIO] : <Mic className="w-4 h-4 mr-2" />,
+    [ChannelType.VIDEO] : <Video className="w-4 h-4 mr-2" />,
+    
+}
+
+const roleIconMap = {
+    [MemberRole.GUEST] : null,
+    [MemberRole.MODERATOR] : <ShieldCheck className="w-4 h-4 mr-2 text-indigo-500" />,
+    [MemberRole.ADMIN] : <ShieldAlert className="w-4 h-4 mr-2 text-rose-500" />
+}
+
+
+export const ServerSidebar = async ({
+    serverId
+}: ServerSidebarProps) => {
+    const profile = await currentProfile();
+    if(!profile){
+        return redirect("/");
+    }
+
+    const server = await db.server.findUnique({
+        where: {
+            id: serverId,
+        },
+        include: {
+            channels:{
+               orderBy: {
+                createdAt: "asc",
+               },
+            },
+            members: {
+                include: {
+                    profile: true,
+                },
+                orderBy: {
+                    role: "asc",
+                }
+            }
+        }
+    });
+
+    const textChannels = server?.channels.filter((channel) => channel.type ===
+    ChannelType.TEXT)
+    const AudioChannels = server?.channels.filter((channel) => channel.type ===
+    ChannelType.AUDIO)
+    const VideoChannels = server?.channels.filter((channel) => channel.type ===
+    ChannelType.VIDEO)
+
+    const members = server?.members.filter((member) => member.profileId !==
+    profile.id)
+
+    if(!server){
+        return redirect("/");
+    }
+
+    const role = server.members.find((member) => member.profileId ===
+    profile.id)?.role;
+
+    return (
+        <div className="flex flex-col h-full text-primary w-full dark:bg-[#2B2D31] bg-[#F2F3F5]">
+           <ServerHeader
+           server = {server}
+           role = {role}
+           />
+           <ScrollArea className="flex-1 px-3">
+            <div className="mt-2">
+                <ServerSearch
+                data = {[
+                    {
+                        label : "Text Channels",
+                        type : "channel",
+                        data : textChannels?.map((channel) => ({ 
+                            id: channel.id,
+                            name: channel.name,
+                            icon: iconMap[channel.type],
+                        }))
+                    },
+                    {
+                        label : "Voice Channels",
+                        type : "channel",
+                        data : AudioChannels?.map((channel) => ({ 
+                            id: channel.id,
+                            name: channel.name,
+                            icon: iconMap[channel.type],
+                        }))
+                    },
+                    {
+                        label : "Video Channels",
+                        type : "channel",
+                        data : VideoChannels?.map((channel) => ({ 
+                            id: channel.id,
+                            name: channel.name,
+                            icon: iconMap[channel.type],
+                        }))
+                    },
+                    {
+                        label : "Members",
+                        type : "member",
+                        data : members?.map((member) => ({ 
+                            id: member.profile.id,
+                            name: member.profile.name,
+                            icon: roleIconMap[member.role],
+                        }))
+                    }
+                ]}
+                />
+            </div>
+            <Separator className="bg-zinc-200 dark:bg-zinc-700 rounded-md mx-4 mb-2"/>
+            <div className="space-y-[2px]">
+            {!!textChannels?.length && (
+                <div className="mb-2">
+                    <ServerSection 
+                     sectionType="channels"
+                     channelType={ChannelType.TEXT}
+                     role={role}
+                     label="Text Channels"
+                    />
+                    {textChannels.map((channel) => (
+                        <ServerChannel
+                        key = {channel.id}
+                        channel = {channel}
+                        server = {server}
+                        role = {role}
+                        />
+                    ))}
+                </div>
+            )}
+            </div>
+            <div className="space-y-[2px]">
+            {!!AudioChannels?.length && (
+                <div className="mb-2">
+                    <ServerSection 
+                     sectionType="channels"
+                     channelType={ChannelType.AUDIO}
+                     role={role}
+                     label="Voice Channels"
+                    />
+                    {AudioChannels.map((channel) => (
+                        <ServerChannel
+                        key = {channel.id}
+                        channel = {channel}
+                        server = {server}
+                        role = {role}
+                        />
+                    ))}
+                </div>
+            )}
+            </div>
+            <div className="space-y-[2px]">
+            {!!VideoChannels?.length && (
+                <div className="mb-2">
+                    <ServerSection 
+                     sectionType="channels"
+                     channelType={ChannelType.VIDEO}
+                     role={role}
+                     label="Video Channels"
+                    />
+                    {VideoChannels.map((channel) => (
+                        <ServerChannel
+                        key = {channel.id}
+                        channel = {channel}
+                        server = {server}
+                        role = {role}
+                        />
+                    ))}
+                </div>
+            )}
+            </div>
+            <div className="space-y-[2px]">
+            {!!members?.length && (
+                <div className="mb-2">
+                    <ServerSection 
+                     sectionType="members"
+                     role={role}
+                     server={server}
+                     label="Members"
+                    />
+                    {members.map((member) => (
+                        <ServerMember
+                        key = {member.id}
+                        member = {member}
+                        server = {server}
+                        />
+                    ))}
+                </div>
+            )}
+            </div>
+           </ScrollArea>
+        </div>
+    ) 
+}
+=== src\components\ui\avatar.tsx ===
+"use client"
+
+import * as React from "react"
+import { cn } from "cn"
+import { Avatar as AvatarPrimitive } from "radix-ui"
+
+function Avatar({
+  className,
+  size = "default",
+  ...props
+}: React.ComponentProps<typeof AvatarPrimitive.Root> & {
+  size?: "default" | "sm" | "lg"
+}) {
+  return (
+    <AvatarPrimitive.Root
+      data-slot="avatar"
+      data-size={size}
+      className={cn(
+        "group/avatar relative flex size-8 shrink-0 rounded-full select-none after:absolute after:inset-0 after:rounded-full after:border after:border-border after:mix-blend-darken data-[size=lg]:size-10 data-[size=sm]:size-6 dark:after:mix-blend-lighten",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function AvatarImage({
+  className,
+  ...props
+}: React.ComponentProps<typeof AvatarPrimitive.Image>) {
+  return (
+    <AvatarPrimitive.Image
+      data-slot="avatar-image"
+      className={cn(
+        "aspect-square size-full rounded-full object-cover",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function AvatarFallback({
+  className,
+  ...props
+}: React.ComponentProps<typeof AvatarPrimitive.Fallback>) {
+  return (
+    <AvatarPrimitive.Fallback
+      data-slot="avatar-fallback"
+      className={cn(
+        "flex size-full items-center justify-center rounded-full bg-muted text-sm text-muted-foreground group-data-[size=sm]/avatar:text-xs",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function AvatarBadge({ className, ...props }: React.ComponentProps<"span">) {
+  return (
+    <span
+      data-slot="avatar-badge"
+      className={cn(
+        "absolute right-0 bottom-0 z-10 inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground bg-blend-color ring-2 ring-background select-none",
+        "group-data-[size=sm]/avatar:size-2 group-data-[size=sm]/avatar:[&>svg]:hidden",
+        "group-data-[size=default]/avatar:size-2.5 group-data-[size=default]/avatar:[&>svg]:size-2",
+        "group-data-[size=lg]/avatar:size-3 group-data-[size=lg]/avatar:[&>svg]:size-2",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function AvatarGroup({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="avatar-group"
+      className={cn(
+        "group/avatar-group flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function AvatarGroupCount({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="avatar-group-count"
+      className={cn(
+        "relative flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm text-muted-foreground ring-2 ring-background group-has-data-[size=lg]/avatar-group:size-10 group-has-data-[size=sm]/avatar-group:size-6 [&>svg]:size-4 group-has-data-[size=lg]/avatar-group:[&>svg]:size-5 group-has-data-[size=sm]/avatar-group:[&>svg]:size-3",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+  AvatarGroup,
+  AvatarGroupCount,
+  AvatarBadge,
+}
+
+=== src\components\ui\button.tsx ===
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "cn"
+import { Slot } from "radix-ui"
+
+const buttonVariants = cva(
+  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground hover:bg-primary/80",
+        primary: "bg-indigo-500 text-white hover:bg-indigo-500/90",
+        outline:
+          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+        secondary:
+          "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+        ghost:
+          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
+        destructive:
+          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
+        link: "text-primary underline-offset-4 hover:underline",
+      },
+      size: {
+        default:
+          "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
+        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
+        lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
+        icon: "size-8",
+        "icon-xs":
+          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
+        "icon-sm":
+          "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
+        "icon-lg": "size-9",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+)
+
+function Button({
+  className,
+  variant = "default",
+  size = "default",
+  asChild = false,
+  ...props
+}: React.ComponentProps<"button"> &
+  VariantProps<typeof buttonVariants> & {
+    asChild?: boolean
+  }) {
+  const Comp = asChild ? Slot.Root : "button"
+
+  return (
+    <Comp
+      data-slot="button"
+      data-variant={variant}
+      data-size={size}
+      className={cn(buttonVariants({ variant, size, className }))}
+      {...props}
+    />
+  )
+}
+
+export { Button, buttonVariants }
+
+=== src\components\ui\command.tsx ===
+"use client"
+
+import * as React from "react"
+import { Command as CommandPrimitive } from "cmdk"
+import { cn } from "cn"
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  InputGroup,
+  InputGroupAddon,
+} from "@/components/ui/input-group"
+import { SearchIcon, CheckIcon } from "lucide-react"
+
+function Command({
+  className,
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive>) {
+  return (
+    <CommandPrimitive
+      data-slot="command"
+      className={cn(
+        "flex size-full flex-col overflow-hidden rounded-xl! bg-popover p-1 text-popover-foreground",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function CommandDialog({
+  title = "Command Palette",
+  description = "Search for a command to run...",
+  children,
+  className,
+  showCloseButton = false,
+  ...props
+}: React.ComponentProps<typeof Dialog> & {
+  title?: string
+  description?: string
+  className?: string
+  showCloseButton?: boolean
+}) {
+  return (
+    <Dialog {...props}>
+      <DialogHeader className="sr-only">
+        <DialogTitle>{title}</DialogTitle>
+        <DialogDescription>{description}</DialogDescription>
+      </DialogHeader>
+      <DialogContent
+        className={cn(
+          "top-1/3 translate-y-0 overflow-hidden rounded-xl! p-0",
+          className
+        )}
+        showCloseButton={showCloseButton}
+      >
+        <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
+          {children}
+        </Command>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function CommandInput({
+  className,
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive.Input>) {
+  return (
+    <div data-slot="command-input-wrapper" className="p-1 pb-0">
+      <InputGroup className="h-8! rounded-lg! border-input/30 bg-input/30 shadow-none! *:data-[slot=input-group-addon]:pl-2!">
+        <CommandPrimitive.Input
+          data-slot="command-input"
+          className={cn(
+            "w-full text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
+            className
+          )}
+          {...props}
+        />
+        <InputGroupAddon>
+          <SearchIcon className="size-4 shrink-0 opacity-50" />
+        </InputGroupAddon>
+      </InputGroup>
+    </div>
+  )
+}
+
+function CommandList({
+  className,
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive.List>) {
+  return (
+    <CommandPrimitive.List
+      data-slot="command-list"
+      className={cn(
+        "no-scrollbar max-h-72 scroll-py-1 overflow-x-hidden overflow-y-auto outline-none",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function CommandEmpty({
+  className,
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive.Empty>) {
+  return (
+    <CommandPrimitive.Empty
+      data-slot="command-empty"
+      className={cn("py-6 text-center text-sm", className)}
+      {...props}
+    />
+  )
+}
+
+function CommandGroup({
+  className,
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive.Group>) {
+  return (
+    <CommandPrimitive.Group
+      data-slot="command-group"
+      className={cn(
+        "overflow-hidden p-1 text-foreground **:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:py-1.5 **:[[cmdk-group-heading]]:text-xs **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-muted-foreground",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function CommandSeparator({
+  className,
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive.Separator>) {
+  return (
+    <CommandPrimitive.Separator
+      data-slot="command-separator"
+      className={cn("-mx-1 h-px bg-border", className)}
+      {...props}
+    />
+  )
+}
+
+function CommandItem({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive.Item>) {
+  return (
+    <CommandPrimitive.Item
+      data-slot="command-item"
+      className={cn(
+        "group/command-item relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none in-data-[slot=dialog-content]:rounded-lg! data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-selected:bg-muted data-selected:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-selected:*:[svg]:text-foreground",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <CheckIcon className="ml-auto opacity-0 group-has-data-[slot=command-shortcut]/command-item:hidden group-data-[checked=true]/command-item:opacity-100" />
+    </CommandPrimitive.Item>
+  )
+}
+
+function CommandShortcut({
+  className,
+  ...props
+}: React.ComponentProps<"span">) {
+  return (
+    <span
+      data-slot="command-shortcut"
+      className={cn(
+        "ml-auto text-xs tracking-widest text-muted-foreground group-data-selected/command-item:text-foreground",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export {
+  Command,
+  CommandDialog,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandShortcut,
+  CommandSeparator,
+}
+
+=== src\components\ui\dialog.tsx ===
+"use client"
+
+import * as React from "react"
+import { cn } from "cn"
+import { Dialog as DialogPrimitive } from "radix-ui"
+
+import { Button } from "@/components/ui/button"
+import { XIcon } from "lucide-react"
+
+function Dialog({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Root>) {
+  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+}
+
+function DialogTrigger({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
+  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
+}
+
+function DialogPortal({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Portal>) {
+  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
+}
+
+function DialogClose({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Close>) {
+  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+}
+
+function DialogOverlay({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+  return (
+    <DialogPrimitive.Overlay
+      data-slot="dialog-overlay"
+      className={cn(
+        "fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DialogContent({
+  className,
+  children,
+  showCloseButton = true,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Content> & {
+  showCloseButton?: boolean
+}) {
+  return (
+    <DialogPortal>
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        data-slot="dialog-content"
+        className={cn(
+          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          className
+        )}
+        style={{ transform: "translate(-50%, -50%)", ...props.style }}
+        {...props}
+      >
+        {children}
+        {showCloseButton && (
+          <DialogPrimitive.Close data-slot="dialog-close" asChild>
+            <Button
+              variant="ghost"
+              className="absolute top-2 right-2"
+              size="icon-sm"
+            >
+              <XIcon
+              />
+              <span className="sr-only">Close</span>
+            </Button>
+          </DialogPrimitive.Close>
+        )}
+      </DialogPrimitive.Content>
+    </DialogPortal>
+  )
+}
+
+function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-header"
+      className={cn("flex flex-col gap-2", className)}
+      {...props}
+    />
+  )
+}
+
+function DialogFooter({
+  className,
+  showCloseButton = false,
+  children,
+  ...props
+}: React.ComponentProps<"div"> & {
+  showCloseButton?: boolean
+}) {
+  return (
+    <div
+      data-slot="dialog-footer"
+      className={cn(
+        "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      {showCloseButton && (
+        <DialogPrimitive.Close asChild>
+          <Button variant="outline">Close</Button>
+        </DialogPrimitive.Close>
+      )}
+    </div>
+  )
+}
+
+function DialogTitle({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Title>) {
+  return (
+    <DialogPrimitive.Title
+      data-slot="dialog-title"
+      className={cn(
+        "font-heading text-base leading-none font-medium",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DialogDescription({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Description>) {
+  return (
+    <DialogPrimitive.Description
+      data-slot="dialog-description"
+      className={cn(
+        "text-sm text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+}
+
+=== src\components\ui\dropdown-menu.tsx ===
+"use client"
+
+import * as React from "react"
+import { cn } from "cn"
+import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui"
+import { CheckIcon, ChevronRightIcon } from "lucide-react"
+
+function DropdownMenu({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
+  return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />
+}
+
+function DropdownMenuPortal({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Portal>) {
+  return (
+    <DropdownMenuPrimitive.Portal data-slot="dropdown-menu-portal" {...props} />
+  )
+}
+
+function DropdownMenuTrigger({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
+  return (
+    <DropdownMenuPrimitive.Trigger
+      data-slot="dropdown-menu-trigger"
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuContent({
+  className,
+  align = "start",
+  sideOffset = 4,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
+  return (
+    <DropdownMenuPrimitive.Portal>
+      <DropdownMenuPrimitive.Content
+        data-slot="dropdown-menu-content"
+        sideOffset={sideOffset}
+        align={align}
+        className={cn("z-50 max-h-(--radix-dropdown-menu-content-available-height) w-(--radix-dropdown-menu-trigger-width) min-w-32 origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:overflow-hidden data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", className )}
+        {...props}
+      />
+    </DropdownMenuPrimitive.Portal>
+  )
+}
+
+function DropdownMenuGroup({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Group>) {
+  return (
+    <DropdownMenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />
+  )
+}
+
+function DropdownMenuItem({
+  className,
+  inset,
+  variant = "default",
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Item> & {
+  inset?: boolean
+  variant?: "default" | "destructive"
+}) {
+  return (
+    <DropdownMenuPrimitive.Item
+      data-slot="dropdown-menu-item"
+      data-inset={inset}
+      data-variant={variant}
+      className={cn(
+        "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuCheckboxItem({
+  className,
+  children,
+  checked,
+  inset,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.CheckboxItem> & {
+  inset?: boolean
+}) {
+  return (
+    <DropdownMenuPrimitive.CheckboxItem
+      data-slot="dropdown-menu-checkbox-item"
+      data-inset={inset}
+      className={cn(
+        "relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      checked={checked}
+      {...props}
+    >
+      <span
+        className="pointer-events-none absolute right-2 flex items-center justify-center"
+        data-slot="dropdown-menu-checkbox-item-indicator"
+      >
+        <DropdownMenuPrimitive.ItemIndicator>
+          <CheckIcon
+          />
+        </DropdownMenuPrimitive.ItemIndicator>
+      </span>
+      {children}
+    </DropdownMenuPrimitive.CheckboxItem>
+  )
+}
+
+function DropdownMenuRadioGroup({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.RadioGroup>) {
+  return (
+    <DropdownMenuPrimitive.RadioGroup
+      data-slot="dropdown-menu-radio-group"
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuRadioItem({
+  className,
+  children,
+  inset,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.RadioItem> & {
+  inset?: boolean
+}) {
+  return (
+    <DropdownMenuPrimitive.RadioItem
+      data-slot="dropdown-menu-radio-item"
+      data-inset={inset}
+      className={cn(
+        "relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      {...props}
+    >
+      <span
+        className="pointer-events-none absolute right-2 flex items-center justify-center"
+        data-slot="dropdown-menu-radio-item-indicator"
+      >
+        <DropdownMenuPrimitive.ItemIndicator>
+          <CheckIcon
+          />
+        </DropdownMenuPrimitive.ItemIndicator>
+      </span>
+      {children}
+    </DropdownMenuPrimitive.RadioItem>
+  )
+}
+
+function DropdownMenuLabel({
+  className,
+  inset,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Label> & {
+  inset?: boolean
+}) {
+  return (
+    <DropdownMenuPrimitive.Label
+      data-slot="dropdown-menu-label"
+      data-inset={inset}
+      className={cn(
+        "px-1.5 py-1 text-xs font-medium text-muted-foreground data-inset:pl-7",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuSeparator({
+  className,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Separator>) {
+  return (
+    <DropdownMenuPrimitive.Separator
+      data-slot="dropdown-menu-separator"
+      className={cn("-mx-1 my-1 h-px bg-border", className)}
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuShortcut({
+  className,
+  ...props
+}: React.ComponentProps<"span">) {
+  return (
+    <span
+      data-slot="dropdown-menu-shortcut"
+      className={cn(
+        "ml-auto text-xs tracking-widest text-muted-foreground group-focus/dropdown-menu-item:text-accent-foreground",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuSub({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Sub>) {
+  return <DropdownMenuPrimitive.Sub data-slot="dropdown-menu-sub" {...props} />
+}
+
+function DropdownMenuSubTrigger({
+  className,
+  inset,
+  children,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.SubTrigger> & {
+  inset?: boolean
+}) {
+  return (
+    <DropdownMenuPrimitive.SubTrigger
+      data-slot="dropdown-menu-sub-trigger"
+      data-inset={inset}
+      className={cn(
+        "flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-open:bg-accent data-open:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <ChevronRightIcon className="ml-auto" />
+    </DropdownMenuPrimitive.SubTrigger>
+  )
+}
+
+function DropdownMenuSubContent({
+  className,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent>) {
+  return (
+    <DropdownMenuPrimitive.SubContent
+      data-slot="dropdown-menu-sub-content"
+      className={cn("z-50 min-w-[96px] origin-(--radix-dropdown-menu-content-transform-origin) overflow-hidden rounded-lg bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", className )}
+      {...props}
+    />
+  )
+}
+
+export {
+  DropdownMenu,
+  DropdownMenuPortal,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+}
+
+=== src\components\ui\form.tsx ===
+"use client"
+
+import * as React from "react"
+import * as LabelPrimitive from "@radix-ui/react-label"
+import { Slot } from "@radix-ui/react-slot"
+import {
+  Controller,
+  ControllerProps,
+  FieldPath,
+  FieldValues,
+  FormProvider,
+  useFormContext,
+} from "react-hook-form"
+
+import { cn } from "cn"
+import { Label } from "@/components/ui/label"
+
+const Form = FormProvider
+
+type FormFieldContextValue<
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+> = {
+  name: TName
+}
+
+const FormFieldContext = React.createContext<FormFieldContextValue>(
+  {} as FormFieldContextValue
+)
+
+const FormField = <
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+>({
+  ...props
+}: ControllerProps<TFieldValues, TName>) => {
+  return (
+    <FormFieldContext.Provider value={{ name: props.name }}>
+      <Controller {...props} />
+    </FormFieldContext.Provider>
+  )
+}
+
+type FormItemContextValue = {
+  id: string
+}
+
+const FormItemContext = React.createContext<FormItemContextValue>(
+  {} as FormItemContextValue
+)
+
+const FormItem = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => {
+  const id = React.useId()
+
+  return (
+    <FormItemContext.Provider value={{ id }}>
+      <div ref={ref} className={cn("space-y-2", className)} {...props} />
+    </FormItemContext.Provider>
+  )
+})
+FormItem.displayName = "FormItem"
+
+const useFormField = () => {
+  const fieldContext = React.useContext(FormFieldContext)
+  const itemContext = React.useContext(FormItemContext)
+  const { getFieldState, formState } = useFormContext()
+
+  const fieldState = getFieldState(fieldContext.name, formState)
+
+  if (!fieldContext) {
+    throw new Error("useFormField should be used within <FormField>")
+  }
+
+  const { id } = itemContext
+
+  return {
+    id,
+    name: fieldContext.name,
+    formItemId: `${id}-form-item`,
+    formDescriptionId: `${id}-form-item-description`,
+    formMessageId: `${id}-form-item-message`,
+    ...fieldState,
+  }
+}
+
+const FormLabel = React.forwardRef<
+  React.ElementRef<typeof LabelPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
+>(({ className, ...props }, ref) => {
+  const { error, formItemId } = useFormField()
+
+  return (
+    <Label
+      ref={ref}
+      className={cn(error && "text-destructive", className)}
+      htmlFor={formItemId}
+      {...props}
+    />
+  )
+})
+FormLabel.displayName = "FormLabel"
+
+const FormControl = React.forwardRef<
+  React.ElementRef<typeof Slot>,
+  React.ComponentPropsWithoutRef<typeof Slot>
+>(({ ...props }, ref) => {
+  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
+
+  return (
+    <Slot
+      ref={ref}
+      id={formItemId}
+      aria-describedby={
+        !error
+          ? `${formDescriptionId}`
+          : `${formDescriptionId} ${formMessageId}`
+      }
+      aria-invalid={!!error}
+      {...props}
+    />
+  )
+})
+FormControl.displayName = "FormControl"
+
+const FormDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => {
+  const { formDescriptionId } = useFormField()
+
+  return (
+    <p
+      ref={ref}
+      id={formDescriptionId}
+      className={cn("text-sm text-muted-foreground", className)}
+      {...props}
+    />
+  )
+})
+FormDescription.displayName = "FormDescription"
+
+const FormMessage = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, children, ...props }, ref) => {
+  const { error, formMessageId } = useFormField()
+  const body = error ? String(error?.message) : children
+
+  if (!body) {
+    return null
+  }
+
+  return (
+    <p
+      ref={ref}
+      id={formMessageId}
+      className={cn("text-sm font-medium text-destructive", className)}
+      {...props}
+    >
+      {body}
+    </p>
+  )
+})
+FormMessage.displayName = "FormMessage"
+
+export {
+  useFormField,
+  Form,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+  FormMessage,
+  FormField,
+}
+
+=== src\components\ui\input-group.tsx ===
+"use client"
+
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "cn"
+
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+
+function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="input-group"
+      role="group"
+      className={cn(
+        "group/input-group relative flex h-8 w-full min-w-0 items-center rounded-lg border border-input transition-colors outline-none in-data-[slot=combobox-content]:focus-within:border-inherit in-data-[slot=combobox-content]:focus-within:ring-0 has-disabled:bg-input/50 has-disabled:opacity-50 has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-3 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/50 has-[[data-slot][aria-invalid=true]]:border-destructive has-[[data-slot][aria-invalid=true]]:ring-3 has-[[data-slot][aria-invalid=true]]:ring-destructive/20 has-[>[data-align=block-end]]:h-auto has-[>[data-align=block-end]]:flex-col has-[>[data-align=block-start]]:h-auto has-[>[data-align=block-start]]:flex-col has-[>textarea]:h-auto dark:bg-input/30 dark:has-disabled:bg-input/80 dark:has-[[data-slot][aria-invalid=true]]:ring-destructive/40 has-[>[data-align=block-end]]:[&>input]:pt-3 has-[>[data-align=block-start]]:[&>input]:pb-3 has-[>[data-align=inline-end]]:[&>input]:pr-1.5 has-[>[data-align=inline-start]]:[&>input]:pl-1.5",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+const inputGroupAddonVariants = cva(
+  "flex h-auto cursor-text items-center justify-center gap-2 py-1.5 text-sm font-medium text-muted-foreground select-none group-data-[disabled=true]/input-group:opacity-50 [&>kbd]:rounded-[calc(var(--radius)-5px)] [&>svg:not([class*='size-'])]:size-4",
+  {
+    variants: {
+      align: {
+        "inline-start":
+          "order-first pl-2 has-[>button]:ml-[-0.3rem] has-[>kbd]:ml-[-0.15rem]",
+        "inline-end":
+          "order-last pr-2 has-[>button]:mr-[-0.3rem] has-[>kbd]:mr-[-0.15rem]",
+        "block-start":
+          "order-first w-full justify-start px-2.5 pt-2 group-has-[>input]/input-group:pt-2 [.border-b]:pb-2",
+        "block-end":
+          "order-last w-full justify-start px-2.5 pb-2 group-has-[>input]/input-group:pb-2 [.border-t]:pt-2",
+      },
+    },
+    defaultVariants: {
+      align: "inline-start",
+    },
+  }
+)
+
+function InputGroupAddon({
+  className,
+  align = "inline-start",
+  ...props
+}: React.ComponentProps<"div"> & VariantProps<typeof inputGroupAddonVariants>) {
+  return (
+    <div
+      role="group"
+      data-slot="input-group-addon"
+      data-align={align}
+      className={cn(inputGroupAddonVariants({ align }), className)}
+      onClick={(e) => {
+        if ((e.target as HTMLElement).closest("button")) {
+          return
+        }
+        e.currentTarget.parentElement?.querySelector("input")?.focus()
+      }}
+      {...props}
+    />
+  )
+}
+
+const inputGroupButtonVariants = cva(
+  "flex items-center gap-2 text-sm shadow-none",
+  {
+    variants: {
+      size: {
+        xs: "h-6 gap-1 rounded-[calc(var(--radius)-3px)] px-1.5 [&>svg:not([class*='size-'])]:size-3.5",
+        sm: "",
+        "icon-xs":
+          "size-6 rounded-[calc(var(--radius)-3px)] p-0 has-[>svg]:p-0",
+        "icon-sm": "size-8 p-0 has-[>svg]:p-0",
+      },
+    },
+    defaultVariants: {
+      size: "xs",
+    },
+  }
+)
+
+function InputGroupButton({
+  className,
+  type = "button",
+  variant = "ghost",
+  size = "xs",
+  ...props
+}: Omit<React.ComponentProps<typeof Button>, "size"> &
+  VariantProps<typeof inputGroupButtonVariants>) {
+  return (
+    <Button
+      type={type}
+      data-size={size}
+      variant={variant}
+      className={cn(inputGroupButtonVariants({ size }), className)}
+      {...props}
+    />
+  )
+}
+
+function InputGroupText({ className, ...props }: React.ComponentProps<"span">) {
+  return (
+    <span
+      className={cn(
+        "flex items-center gap-2 text-sm text-muted-foreground [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function InputGroupInput({
+  className,
+  ...props
+}: React.ComponentProps<"input">) {
+  return (
+    <Input
+      data-slot="input-group-control"
+      className={cn(
+        "flex-1 rounded-none border-0 bg-transparent shadow-none ring-0 focus-visible:ring-0 disabled:bg-transparent aria-invalid:ring-0 dark:bg-transparent dark:disabled:bg-transparent",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function InputGroupTextarea({
+  className,
+  ...props
+}: React.ComponentProps<"textarea">) {
+  return (
+    <Textarea
+      data-slot="input-group-control"
+      className={cn(
+        "flex-1 resize-none rounded-none border-0 bg-transparent py-2 shadow-none ring-0 focus-visible:ring-0 disabled:bg-transparent aria-invalid:ring-0 dark:bg-transparent dark:disabled:bg-transparent",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupText,
+  InputGroupInput,
+  InputGroupTextarea,
+}
+
+=== src\components\ui\input.tsx ===
+import * as React from "react"
+import { cn } from "cn"
+
+function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+  return (
+    <input
+      type={type}
+      data-slot="input"
+      className={cn(
+        "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export { Input }
+
+=== src\components\ui\label.tsx ===
+"use client"
+
+import * as React from "react"
+import { cn } from "cn"
+import { Label as LabelPrimitive } from "radix-ui"
+
+function Label({
+  className,
+  ...props
+}: React.ComponentProps<typeof LabelPrimitive.Root>) {
+  return (
+    <LabelPrimitive.Root
+      data-slot="label"
+      className={cn(
+        "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export { Label }
+
+=== src\components\ui\scroll-area.tsx ===
+"use client"
+
+import * as React from "react"
+import { cn } from "cn"
+import { ScrollArea as ScrollAreaPrimitive } from "radix-ui"
+
+function ScrollArea({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+  return (
+    <ScrollAreaPrimitive.Root
+      data-slot="scroll-area"
+      className={cn("relative", className)}
+      {...props}
+    >
+      <ScrollAreaPrimitive.Viewport
+        data-slot="scroll-area-viewport"
+        className="size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1"
+      >
+        {children}
+      </ScrollAreaPrimitive.Viewport>
+      <ScrollBar />
+      <ScrollAreaPrimitive.Corner />
+    </ScrollAreaPrimitive.Root>
+  )
+}
+
+function ScrollBar({
+  className,
+  orientation = "vertical",
+  ...props
+}: React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>) {
+  return (
+    <ScrollAreaPrimitive.ScrollAreaScrollbar
+      data-slot="scroll-area-scrollbar"
+      data-orientation={orientation}
+      orientation={orientation}
+      className={cn(
+        "flex touch-none p-px transition-colors select-none data-horizontal:h-2.5 data-horizontal:flex-col data-horizontal:border-t data-horizontal:border-t-transparent data-vertical:h-full data-vertical:w-2.5 data-vertical:border-l data-vertical:border-l-transparent",
+        className
+      )}
+      {...props}
+    >
+      <ScrollAreaPrimitive.ScrollAreaThumb
+        data-slot="scroll-area-thumb"
+        className="relative flex-1 rounded-full bg-border"
+      />
+    </ScrollAreaPrimitive.ScrollAreaScrollbar>
+  )
+}
+
+export { ScrollArea, ScrollBar }
+
+=== src\components\ui\select.tsx ===
+"use client"
+
+import * as React from "react"
+import { cn } from "cn"
+import { Select as SelectPrimitive } from "radix-ui"
+import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
+
+function Select({
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Root>) {
+  return <SelectPrimitive.Root data-slot="select" {...props} />
+}
+
+function SelectGroup({
+  className,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Group>) {
+  return (
+    <SelectPrimitive.Group
+      data-slot="select-group"
+      className={cn("scroll-my-1 p-1", className)}
+      {...props}
+    />
+  )
+}
+
+function SelectValue({
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Value>) {
+  return <SelectPrimitive.Value data-slot="select-value" {...props} />
+}
+
+function SelectTrigger({
+  className,
+  size = "default",
+  children,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
+  size?: "sm" | "default"
+}) {
+  return (
+    <SelectPrimitive.Trigger
+      data-slot="select-trigger"
+      data-size={size}
+      className={cn(
+        "flex w-fit items-center justify-between gap-1.5 rounded-lg border border-input bg-transparent py-2 pr-2 pl-2.5 text-sm whitespace-nowrap transition-colors outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground data-[size=default]:h-8 data-[size=sm]:h-7 data-[size=sm]:rounded-[min(var(--radius-md),10px)] *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <SelectPrimitive.Icon asChild>
+        <ChevronDownIcon className="pointer-events-none size-4 text-muted-foreground" />
+      </SelectPrimitive.Icon>
+    </SelectPrimitive.Trigger>
+  )
+}
+
+function SelectContent({
+  className,
+  children,
+  position = "item-aligned",
+  align = "center",
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Content>) {
+  return (
+    <SelectPrimitive.Portal>
+      <SelectPrimitive.Content
+        data-slot="select-content"
+        data-align-trigger={position === "item-aligned"}
+        className={cn("relative z-50 max-h-(--radix-select-content-available-height) min-w-36 origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", position ==="popper"&&"data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1", className )}
+        position={position}
+        align={align}
+        {...props}
+      >
+        <SelectScrollUpButton />
+        <SelectPrimitive.Viewport
+          data-position={position}
+          className={cn(
+            "data-[position=popper]:h-(--radix-select-trigger-height) data-[position=popper]:w-full data-[position=popper]:min-w-(--radix-select-trigger-width)",
+            position === "popper" && ""
+          )}
+        >
+          {children}
+        </SelectPrimitive.Viewport>
+        <SelectScrollDownButton />
+      </SelectPrimitive.Content>
+    </SelectPrimitive.Portal>
+  )
+}
+
+function SelectLabel({
+  className,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Label>) {
+  return (
+    <SelectPrimitive.Label
+      data-slot="select-label"
+      className={cn("px-1.5 py-1 text-xs text-muted-foreground", className)}
+      {...props}
+    />
+  )
+}
+
+function SelectItem({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Item>) {
+  return (
+    <SelectPrimitive.Item
+      data-slot="select-item"
+      className={cn(
+        "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        className
+      )}
+      {...props}
+    >
+      <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center">
+        <SelectPrimitive.ItemIndicator>
+          <CheckIcon className="pointer-events-none" />
+        </SelectPrimitive.ItemIndicator>
+      </span>
+      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+    </SelectPrimitive.Item>
+  )
+}
+
+function SelectSeparator({
+  className,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Separator>) {
+  return (
+    <SelectPrimitive.Separator
+      data-slot="select-separator"
+      className={cn("pointer-events-none -mx-1 my-1 h-px bg-border", className)}
+      {...props}
+    />
+  )
+}
+
+function SelectScrollUpButton({
+  className,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.ScrollUpButton>) {
+  return (
+    <SelectPrimitive.ScrollUpButton
+      data-slot="select-scroll-up-button"
+      className={cn(
+        "z-10 flex cursor-default items-center justify-center bg-popover py-1 [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      {...props}
+    >
+      <ChevronUpIcon
+      />
+    </SelectPrimitive.ScrollUpButton>
+  )
+}
+
+function SelectScrollDownButton({
+  className,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.ScrollDownButton>) {
+  return (
+    <SelectPrimitive.ScrollDownButton
+      data-slot="select-scroll-down-button"
+      className={cn(
+        "z-10 flex cursor-default items-center justify-center bg-popover py-1 [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      {...props}
+    >
+      <ChevronDownIcon
+      />
+    </SelectPrimitive.ScrollDownButton>
+  )
+}
+
+export {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectScrollDownButton,
+  SelectScrollUpButton,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+}
+
+=== src\components\ui\separator.tsx ===
+"use client"
+
+import * as React from "react"
+import { cn } from "cn"
+import { Separator as SeparatorPrimitive } from "radix-ui"
+
+function Separator({
+  className,
+  orientation = "horizontal",
+  decorative = true,
+  ...props
+}: React.ComponentProps<typeof SeparatorPrimitive.Root>) {
+  return (
+    <SeparatorPrimitive.Root
+      data-slot="separator"
+      decorative={decorative}
+      orientation={orientation}
+      className={cn(
+        "shrink-0 bg-border data-horizontal:h-px data-horizontal:w-full data-vertical:w-px data-vertical:self-stretch",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export { Separator }
+
+=== src\components\ui\textarea.tsx ===
+import * as React from "react"
+import { cn } from "cn"
+
+function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
+  return (
+    <textarea
+      data-slot="textarea"
+      className={cn(
+        "flex field-sizing-content min-h-16 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export { Textarea }
+
+=== src\components\ui\tooltip.tsx ===
+"use client"
+
+import * as React from "react"
+import { cn } from "cn"
+import { Tooltip as TooltipPrimitive } from "radix-ui"
+
+function TooltipProvider({
+  delayDuration = 0,
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
+  return (
+    <TooltipPrimitive.Provider
+      data-slot="tooltip-provider"
+      delayDuration={delayDuration}
+      {...props}
+    />
+  )
+}
+
+function Tooltip({
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+}
+
+function TooltipTrigger({
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
+  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
+}
+
+function TooltipContent({
+  className,
+  sideOffset = 0,
+  children,
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+  return (
+    <TooltipPrimitive.Portal>
+      <TooltipPrimitive.Content
+        data-slot="tooltip-content"
+        sideOffset={sideOffset}
+        className={cn(
+          "z-50 overflow-hidden rounded-md px-3 py-1.5 text-sm font-semibold shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+          "bg-black text-white",
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </TooltipPrimitive.Content>
+    </TooltipPrimitive.Portal>
+  )
+}
+
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger }
+
+=== src\components\action-tooltip.tsx ===
+"use client";
+
+import{
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+interface ActionTooltipProps{
+    label: string;
+    children: React.ReactNode;
+    side?: "top" | "right" | "bottom" | "left";
+    align?: "start" | "center" | "end";
+    asChild?: boolean;
+}   
+ 
+export const ActionTooltip = ({
+    label,
+    children,
+    side,
+    align,
+    asChild
+}: ActionTooltipProps) => {
+    return (
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild={asChild}>
+                    {children}
+                </TooltipTrigger>
+                <TooltipContent side={side} align={align}>
+                    <p className="font-semibold text-sm capitalize">
+                        {label.toLowerCase()}
+                    </p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
+    )
+}   
+=== src\components\file-upload.tsx ===
+"use client";
+import { X } from "lucide-react";
+import Image from "next/image";
+import { UploadDropzone } from "@/lib/uploadthing";
+import "@uploadthing/react/styles.css";
+
+interface FileUploadProps {
+    endpoint: "messageFile" | "serverImage"
+    value: string;
+    onChange: (url?: string) => void;
+}
+
+export const FileUpload = ({ onChange, value, endpoint }: FileUploadProps) => {
+    const fileType = value?.split(".").pop();
+    
+    if(value && fileType !== "pdf") {
+        return (
+            <div className="relative w-20 h-20">
+                <Image
+                src={value}
+                alt="Upload"
+                fill
+                className="rounded-full"
+                />
+                <button
+                onClick={()=>onChange("")}
+                className="absolute top-0 right-0 bg-rose-500 p-1 rounded-full
+                shadow-sm hover:bg-rose-600 transition text-white"
+                type="button"
+                >
+                    <X className="h-4 w-4" />
+                </button>
+            </div>
+        )
+    }
+    return (
+        <UploadDropzone
+        endpoint={endpoint}
+        onClientUploadComplete={(res) => {
+            const uploadedUrl = res?.[0]?.appUrl || res?.[0]?.ufsUrl || res?.[0]?.url;
+            onChange(uploadedUrl);
+        }}
+        onUploadError={(error: Error) => {
+            console.log(error);
+        }}
+        />
+    )
+}
+=== src\components\mode-toggle.tsx ===
+"use client"
+
+import * as React from "react"
+import { Moon, Sun } from "lucide-react"
+import { useTheme } from "next-themes"
+
+import { Button } from "@/components/ui/button"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
+export function ModeToggle() {
+    const { setTheme } = useTheme()
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon"
+                className="bg-transparent border-0"
+                >
+                    <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
+                    <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
+                    <span className="sr-only">Toggle theme</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setTheme("light")}>
+                    Light
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("dark")}>
+                    Dark
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("system")}>
+                    System
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    )
+}
+
+=== src\components\user-avatar.tsx ===
+import { Avatar, AvatarImage } from "./ui/avatar";
+import { cn } from "@/lib/utils";
+
+interface UserAvatarProps {
+    src?: string;
+    className?: string;
+}
+
+export const UserAvatar = ({
+    src,
+    className
+}: UserAvatarProps) => {
+    return (
+        <Avatar className={cn("h-7 w-7 md:h-10 md:w-10",className)}>
+            <AvatarImage src={src} className="object-cover"/>
+        </Avatar>
+    );
+};
+=== src\hooks\use-modal-store.ts ===
+import { Channel, ChannelType, Member, Server } from "@prisma/client";
+import { create } from "zustand";
+
+export type ModalType = "createServer" | "invite" | "editServer"
+| "members" | "createChannel" | "leaveServer" | "deleteServer";
+
+interface ModalData{
+    server?: Server;
+    channel?: Channel;
+    channelType?: ChannelType;
+}
+
+interface ModalStore {
+    type: ModalType | null;
+    data: ModalData;
+    isOpen: boolean;
+    onOpen: (type: ModalType, data?: ModalData) => void;
+    onClose: () => void;
+}
+
+export const useModal = create<ModalStore>((set) => ({
+    type: null,
+    data: {},
+    isOpen: false,
+    onOpen: (type, data = {}) => set({ isOpen: true, type, data}),
+    onClose: () => set({ isOpen: false, type: null, data: {}}),
+}));
+=== src\hooks\use-origin.ts ===
+import { useEffect, useState } from "react";
+
+export const useOrigin = () => {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+      setMounted(true);
+    },[]);
+
+    const origin = typeof window !== "undefined" && window.location.origin ? window.location.origin : ""
+
+    if(!mounted){
+        return null;
+    }
+
+    return origin;
+}
+=== src\lib\current-profile.ts ===
+import {auth} from "@clerk/nextjs/server";
+import {db} from "@/lib/db";
+
+export const currentProfile = async () => {
+    const {userId} = await auth();
+
+    if(!userId) return null;
+    const profile = await db.profile.findUnique({
+        where: {
+            userId,
+        },
+    });
+    return profile; 
+}
+=== src\lib\db.ts ===
+import { PrismaClient } from "@prisma/client";
+
+declare global {
+    var prisma: PrismaClient | undefined;
+};
+
+export const db = globalThis.prisma || new PrismaClient();
+
+if (process.env.NODE_ENV !== "production") globalThis.prisma = db;
+
+export default db;
+=== src\lib\initial-profile.ts ===
+import { currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
+
+export const initialProfile = async () => {
+    const user = await currentUser();
+    if (!user) {
+        return redirect("/sign-in");
+    }
+
+    const profile = await db.profile.findUnique({
+        where:{
+            userId: user.id
+        }
+    });
+
+    if(profile){
+        return profile;
+    }
+
+    const newProfile = await db.profile.create({
+        data:{
+            userId: user.id,
+            name: `${user.firstName} ${user.lastName}`,
+            imageUrl: user.imageUrl,
+            email: user.emailAddresses[0].emailAddress
+        }
+    });
+    return newProfile;
+};
+=== src\lib\uploadthing.ts ===
+import {
+  generateUploadButton,
+  generateUploadDropzone,
+} from "@uploadthing/react";
+
+import type { OurFileRouter } from "@/app/api/uploadthing/core";
+
+export const UploadButton = generateUploadButton<OurFileRouter>();
+export const UploadDropzone = generateUploadDropzone<OurFileRouter>();
+
+=== src\lib\utils.ts ===
+export { cn } from "cn"
+
+=== src\middleware.ts ===
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+
+const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)", "/api/uploadthing(.*)"]);
+
+export default clerkMiddleware(async (auth, req) => {
+  if (!isPublicRoute(req)) {
+    await auth.protect();
+  }
+});
+
+export const config = {
+  matcher: [
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/(api(?!/uploadthing)|trpc)(.*)",
+  ],
+};
+
+=== src\types.ts ===
+import { Server, Member, Profile } from "@prisma/client";
+
+export type ServerWithMembersWithProfiles = Server & {
+    members : (Member & { profile: Profile })[];
+}
