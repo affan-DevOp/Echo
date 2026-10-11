@@ -20,14 +20,17 @@ export const initialProfile = async () => {
     return profile;
   }
 
-  const newProfile = await db.profile.create({
-    data: {
-      userId: user.id,
-      name: `${user.firstName} ${user.lastName}`,
-      imageUrl: user.imageUrl,
-      email: user.emailAddresses[0].emailAddress
-    }
-  });
+    const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+    const name = fullName || user.username || user.emailAddresses?.[0]?.emailAddress?.split("@")[0] || "User";
+
+    const newProfile = await db.profile.create({
+      data: {
+        userId: user.id,
+        name,
+        imageUrl: user.imageUrl,
+        email: user.emailAddresses[0].emailAddress
+      }
+    });
 
   return newProfile;
 };

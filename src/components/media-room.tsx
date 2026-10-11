@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { LiveKitRoom, VideoConference } from "@livekit/components-react";
 import "@livekit/components-styles";
-import { Channel } from "@prisma/client";
 import { useUser } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
 
@@ -18,24 +17,72 @@ export const MediaRoom = ({
   video,
   audio
 }: MediaRoomProps) => {
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
   const [token, setToken] = useState("");
+  const [liveKitUrl, setLiveKitUrl] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user?.firstName || !user?.lastName) return;
+    if (!isLoaded || !user) return;
 
-    const name = `${user.firstName} ${user.lastName}`;
+    const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+    const name = fullName || user.username || user.emailAddresses?.[0]?.emailAddress?.split("@")[0] || "User";
+
+    let isMounted = true;
 
     (async () => {
       try {
-        const resp = await fetch(`/api/livekit?room=${chatId}&username=${name}&userId=${user.id}`);
+        const query = new URLSearchParams({
+          room: chatId,
+          username: name,
+          userId: user.id
+        });
+
+        const resp = await fetch(`/api/livekit?${query.toString()}`);
         const data = await resp.json();
-        setToken(data.token);
-      } catch (e) {
-        console.log(e);
+
+        if (!resp.ok || !data.token) {
+          throw new Error(data.error || "Failed to obtain room token");
+        }
+
+        if (isMounted) {
+          setToken(data.token);
+          if (data.wsUrl) {
+            setLiveKitUrl(data.wsUrl);
+          }
+          setError(null);
+        }
+      } catch (e: any) {
+        console.error("LiveKit connection error:", e);
+        if (isMounted) {
+          setError(e?.message || "Failed to connect to voice/video room");
+        }
       }
-    })()
-  }, [user?.firstName, user?.lastName, chatId]);
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user, isLoaded, chatId]);
+
+  if (error) {
+    return (
+      <div className="flex flex-col flex-1 justify-center items-center gap-y-2 p-4">
+        <p className="text-sm text-rose-500 dark:text-rose-400 text-center">
+          {error}
+        </p>
+        <button
+          onClick={() => {
+            setError(null);
+            setToken("");
+          }}
+          className="text-xs text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 underline"
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
 
   if (token === "") {
     return (
@@ -47,19 +94,23 @@ export const MediaRoom = ({
           Loading...
         </p>
       </div>
-    )
+    );
   }
+
+  const serverUrl = liveKitUrl || process.env.NEXT_PUBLIC_LIVEKIT_URL;
 
   return (
     <LiveKitRoom
       data-lk-theme="default"
-      serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
+      serverUrl={serverUrl}
       token={token}
       connect={true}
       video={video}
       audio={audio}
+      onError={(err) => console.error("LiveKit room error:", err)}
+      className="flex-1 flex flex-col h-full"
     >
       <VideoConference />
     </LiveKitRoom>
-  )
-}
+  );
+};
