@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { LiveKitRoom } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { useUser } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
+import axios from "axios";
 import { MediaConference } from "@/components/media/media-conference";
 
 import { useSocket } from "@/components/providers/socket-provider";
@@ -20,11 +22,30 @@ export const MediaRoom = ({
   video,
   audio
 }: MediaRoomProps) => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user, isLoaded } = useUser();
   const { socket } = useSocket();
   const [token, setToken] = useState("");
   const [liveKitUrl, setLiveKitUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const handleDisconnected = async () => {
+    if (searchParams?.get("video")) {
+      try {
+        await axios.post(`/api/socket/direct-messages?conversationId=${chatId}`, {
+          content: "📞 Video call ended",
+        });
+      } catch (e) {}
+
+      if (socket) {
+        socket.emit("call:ended", { conversationId: chatId });
+      }
+
+      router.push(pathname || "");
+    }
+  };
 
   // Track room presence for green dot indicator across users
   useEffect(() => {
@@ -122,6 +143,7 @@ export const MediaRoom = ({
       connect={true}
       video={video}
       audio={audio}
+      onDisconnected={handleDisconnected}
       onError={(err) => console.error("LiveKit room error:", err)}
       className="flex-1 flex flex-col h-full"
     >

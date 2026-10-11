@@ -53,6 +53,7 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIo) => {
         if (data.conversationId) {
           socket.broadcast.emit(`call:declined:${data.conversationId}`, data);
         }
+        socket.broadcast.emit("call:declined", data);
       });
 
       // Direct call ended
@@ -64,6 +65,7 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIo) => {
         if (data.recipientProfileId) {
           io.to(`user:${data.recipientProfileId}`).emit("call:ended", data);
         }
+        socket.broadcast.emit("call:ended", data);
       });
 
       // Voice/Video channel presence tracking

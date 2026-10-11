@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { usePathname, useParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { usePathname, useParams, useRouter, useSearchParams } from "next/navigation";
+import { PhoneOff } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { useSocket } from "@/components/providers/socket-provider";
 import { useCurrentProfile } from "@/hooks/use-current-profile";
 import { useCallStore } from "@/hooks/use-call-store";
@@ -11,14 +13,31 @@ import { useUnreadStore } from "@/hooks/use-unread-store";
 import { IncomingCallModal } from "@/components/modals/incoming-call-modal";
 
 export const CallNotificationProvider = () => {
+  const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const params = useParams();
+
   const { socket, isConnected } = useSocket();
   const { profile, fetchProfile } = useCurrentProfile();
   const { setIncomingCall, clearIncomingCall, incomingCall } = useCallStore();
   const { setRoomActive, setActiveRoomsList, fetchActiveRooms } = useActiveRooms();
   const { incrementUnread, markAsRead, syncServerUnread } = useUnreadStore();
   const lastSyncedServerRef = useRef<string | null>(null);
+
+  // Floating banner for call declined / call ended
+  const [callToast, setCallToast] = useState<{
+    type: "declined" | "ended";
+    message: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!callToast) return;
+    const timer = setTimeout(() => {
+      setCallToast(null);
+    }, 4500);
+    return () => clearTimeout(timer);
+  }, [callToast]);
 
   // 1. Fetch current profile on mount
   useEffect(() => {
@@ -38,13 +57,11 @@ export const CallNotificationProvider = () => {
   useEffect(() => {
     if (!pathname) return;
 
-    // Check if on a channel page
     const channelMatch = pathname.match(/\/channels\/([a-zA-Z0-9_-]+)/);
     if (channelMatch && channelMatch[1]) {
       markAsRead(channelMatch[1]);
     }
 
-    // Check if on a conversation page
     const convMatch = pathname.match(/\/conversations\/([a-zA-Z0-9_-]+)/);
     if (convMatch && convMatch[1]) {
       markAsRead(convMatch[1]);
@@ -73,7 +90,6 @@ export const CallNotificationProvider = () => {
       syncUnreads();
     }
 
-    // Poll active rooms and unreads every 45s as a healthy fallback
     const interval = setInterval(() => {
       syncUnreads();
       fetchActiveRooms();
@@ -94,16 +110,35 @@ export const CallNotificationProvider = () => {
       }
     };
 
-    // Call ended / declined handlers
+    // When someone ends the call
     const onCallEnded = (data: any) => {
       if (incomingCall && data?.conversationId === incomingCall.conversationId) {
         clearIncomingCall();
       }
+
+      // If current user is in video call room, transport back to chatting page
+      if (searchParams?.get("video")) {
+        setCallToast({
+          type: "ended",
+          message: "Call ended - returned to chat",
+        });
+        router.push(pathname || "");
+      }
     };
 
+    // When the recipient declines the call
     const onCallDeclined = (data: any) => {
       if (incomingCall && data?.conversationId === incomingCall.conversationId) {
         clearIncomingCall();
+      }
+
+      // If caller is waiting in video call room, transport back to chatting page
+      if (searchParams?.get("video")) {
+        setCallToast({
+          type: "declined",
+          message: "Call has been declined",
+        });
+        router.push(pathname || "");
       }
     };
 
@@ -123,9 +158,7 @@ export const CallNotificationProvider = () => {
     // Real-time unread messages
     const onChannelMessageNew = ({ channelId, message }: any) => {
       if (!channelId || !message) return;
-      // If message is from someone else
       if (profile && message.member?.profileId !== profile.id) {
-        // If current pathname is not viewing this channel
         if (!pathname?.includes(`/channels/${channelId}`)) {
           incrementUnread(channelId);
         }
@@ -134,9 +167,7 @@ export const CallNotificationProvider = () => {
 
     const onDirectMessageNew = ({ recipientProfileId, senderMemberId, message }: any) => {
       if (!recipientProfileId || !senderMemberId || !message) return;
-      // If we are the recipient
       if (profile && recipientProfileId === profile.id) {
-        // If current pathname is not viewing conversation with this member
         if (!pathname?.includes(`/conversations/${senderMemberId}`)) {
           incrementUnread(senderMemberId);
         }
@@ -171,6 +202,8 @@ export const CallNotificationProvider = () => {
     isConnected,
     profile,
     pathname,
+    searchParams,
+    router,
     incomingCall,
     setIncomingCall,
     clearIncomingCall,
@@ -179,5 +212,33 @@ export const CallNotificationProvider = () => {
     incrementUnread,
   ]);
 
-  return <IncomingCallModal />;
+  return (
+    <>
+      <IncomingCallModal />
+
+      {/* Floating alert banner for call declined / call ended */}
+      {callToast && (
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top-4 fade-in duration-300 pointer-events-none">
+          <div
+            className={cn(
+              "px-5 py-3 rounded-full shadow-2xl flex items-center gap-x-3 text-sm font-semibold border backdrop-blur-md",
+              callToast.type === "declined"
+                ? "bg-rose-600/95 text-white border-rose-400/60 shadow-rose-950/50"
+                : "bg-zinc-800/95 text-zinc-100 border-zinc-600/80 shadow-black/60"
+            )}
+          >
+            <div
+              className={cn(
+                "p-1.5 rounded-full",
+                callToast.type === "declined" ? "bg-rose-700/80" : "bg-zinc-700/80"
+              )}
+            >
+              <PhoneOff className="w-4 h-4 text-white" />
+            </div>
+            <span>{callToast.message}</span>
+          </div>
+        </div>
+      )}
+    </>
+  );
 };

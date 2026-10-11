@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Phone, PhoneOff, Video } from "lucide-react";
+import axios from "axios";
 
 import { useCallStore } from "@/hooks/use-call-store";
 import { useSocket } from "@/components/providers/socket-provider";
@@ -90,14 +91,26 @@ export const IncomingCallModal = () => {
     router.push(`/servers/${call.serverId}/conversations/${call.callerMemberId}?video=true`);
   };
 
-  const onDecline = () => {
-    if (socket && incomingCall) {
-      socket.emit("call:decline", {
-        conversationId: incomingCall.conversationId,
-        callerProfileId: incomingCall.callerProfile?.id,
-      });
-    }
+  const onDecline = async () => {
+    const call = incomingCall;
     clearIncomingCall();
+
+    if (call) {
+      if (socket) {
+        socket.emit("call:decline", {
+          conversationId: call.conversationId,
+          callerProfileId: call.callerProfile?.id,
+        });
+      }
+
+      try {
+        await axios.post(`/api/socket/direct-messages?conversationId=${call.conversationId}`, {
+          content: "📞 Call declined",
+        });
+      } catch (err) {
+        console.error("Failed to post declined log:", err);
+      }
+    }
   };
 
   return (
