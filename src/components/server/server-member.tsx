@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 import { UserAvatar } from "@/components/user-avatar";
+import { useUnreadStore } from "@/hooks/use-unread-store";
 
 interface ServerMemberProps {
   member: Member & { profile: Profile };
@@ -24,11 +25,15 @@ export const ServerMember = ({
 }: ServerMemberProps) => {
   const params = useParams();
   const router = useRouter();
+  const { unreadCounts, markAsRead } = useUnreadStore();
 
   const icon = roleIconMap[member.role];
+  const unreadCount = params?.memberId === member.id ? 0 : unreadCounts[member.id] || 0;
+  const hasUnread = unreadCount > 0;
 
   const onClick = () => {
-    router.push(`/servers/${params?.serverId}/conversations/${member.id}`)
+    markAsRead(member.id);
+    router.push(`/servers/${params?.serverId}/conversations/${member.id}`);
   }
 
   return (
@@ -45,13 +50,19 @@ export const ServerMember = ({
       />
       <p
         className={cn(
-          "font-semibold text-sm text-zinc-500 group-hover:text-zinc-600 dark:text-zinc-400 dark:group-hover:text-zinc-300 transition",
-          params?.memberId === member.id && "text-primary dark:text-zinc-200 dark:group-hover:text-white"
+          "font-semibold text-sm text-zinc-500 group-hover:text-zinc-600 dark:text-zinc-400 dark:group-hover:text-zinc-300 transition text-left",
+          params?.memberId === member.id && "text-primary dark:text-zinc-200 dark:group-hover:text-white",
+          hasUnread && "font-bold text-zinc-900 dark:text-white"
         )}
       >
         {member.profile.name}
       </p>
       {icon}
+      {hasUnread && (
+        <span className="ml-auto bg-indigo-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-tight shadow-sm flex-shrink-0">
+          {unreadCount > 99 ? "99+" : unreadCount}
+        </span>
+      )}
     </button>
   )
 }

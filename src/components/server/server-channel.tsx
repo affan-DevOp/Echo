@@ -12,6 +12,8 @@ import { useParams, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { ActionTooltip } from "@/components/action-tooltip";
 import { ModalType, useModal } from "@/hooks/use-modal-store";
+import { useActiveRooms } from "@/hooks/use-active-rooms";
+import { useUnreadStore } from "@/hooks/use-unread-store";
 
 interface ServerChannelProps {
   channel: Channel;
@@ -33,11 +35,22 @@ export const ServerChannel = ({
   const { onOpen } = useModal();
   const params = useParams();
   const router = useRouter();
+  const { activeRooms } = useActiveRooms();
+  const { unreadCounts, markAsRead } = useUnreadStore();
+
+  const isCallActive =
+    (channel.type === ChannelType.AUDIO || channel.type === ChannelType.VIDEO) &&
+    !!activeRooms[channel.id];
+
+  const unreadCount =
+    params?.channelId === channel.id ? 0 : unreadCounts[channel.id] || 0;
+  const hasUnread = unreadCount > 0;
 
   const Icon = iconMap[channel.type];
 
   const onClick = () => {
-    router.push(`/servers/${params?.serverId}/channels/${channel.id}`)
+    markAsRead(channel.id);
+    router.push(`/servers/${params?.serverId}/channels/${channel.id}`);
   }
 
   const onAction = (e: React.MouseEvent, action: ModalType) => {
@@ -53,15 +66,40 @@ export const ServerChannel = ({
         params?.channelId === channel.id && "bg-zinc-700/20 dark:bg-zinc-700"
       )}
     >
-      <Icon className="flex-shrink-0 w-5 h-5 text-zinc-500 dark:text-zinc-400" />
+      <Icon className={cn(
+        "flex-shrink-0 w-5 h-5 text-zinc-500 dark:text-zinc-400",
+        hasUnread && "text-zinc-800 dark:text-zinc-200"
+      )} />
       <p className={cn(
-        "line-clamp-1 font-semibold text-sm text-zinc-500 group-hover:text-zinc-600 dark:text-zinc-400 dark:group-hover:text-zinc-300 transition",
-        params?.channelId === channel.id && "text-primary dark:text-zinc-200 dark:group-hover:text-white"
+        "line-clamp-1 font-semibold text-sm text-zinc-500 group-hover:text-zinc-600 dark:text-zinc-400 dark:group-hover:text-zinc-300 transition text-left",
+        params?.channelId === channel.id && "text-primary dark:text-zinc-200 dark:group-hover:text-white",
+        hasUnread && "font-bold text-zinc-900 dark:text-white"
       )}>
         {channel.name}
       </p>
+
+      {/* Green dot indicator for active voice/video channel call */}
+      {isCallActive && (
+        <ActionTooltip label="Call in progress">
+          <span className="relative flex h-2.5 w-2.5 ml-1 flex-shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+          </span>
+        </ActionTooltip>
+      )}
+
+      {/* Unread message count badge */}
+      {hasUnread && (
+        <span className="ml-auto mr-1 bg-indigo-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-tight shadow-sm flex-shrink-0">
+          {unreadCount > 99 ? "99+" : unreadCount}
+        </span>
+      )}
+
       {channel.name !== "general" && role !== MemberRole.GUEST && (
-        <div className="ml-auto flex items-center gap-x-2">
+        <div className={cn(
+          "flex items-center gap-x-2",
+          !hasUnread && "ml-auto"
+        )}>
           <ActionTooltip label="Edit">
             <Edit
               onClick={(e) => onAction(e, "editChannel")}
@@ -78,7 +116,10 @@ export const ServerChannel = ({
       )}
       {channel.name === "general" && (
         <Lock
-          className="ml-auto w-4 h-4 text-zinc-500 dark:text-zinc-400"
+          className={cn(
+            "w-4 h-4 text-zinc-500 dark:text-zinc-400 flex-shrink-0",
+            !hasUnread && "ml-auto"
+          )}
         />
       )}
     </button>

@@ -7,6 +7,8 @@ import { useUser } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
 import { MediaConference } from "@/components/media/media-conference";
 
+import { useSocket } from "@/components/providers/socket-provider";
+
 interface MediaRoomProps {
   chatId: string;
   video: boolean;
@@ -19,9 +21,21 @@ export const MediaRoom = ({
   audio
 }: MediaRoomProps) => {
   const { user, isLoaded } = useUser();
+  const { socket } = useSocket();
   const [token, setToken] = useState("");
   const [liveKitUrl, setLiveKitUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  // Track room presence for green dot indicator across users
+  useEffect(() => {
+    if (!socket || !chatId) return;
+
+    socket.emit("room:join", { roomId: chatId });
+
+    return () => {
+      socket.emit("room:leave", { roomId: chatId });
+    };
+  }, [socket, chatId]);
 
   useEffect(() => {
     if (!isLoaded || !user) return;

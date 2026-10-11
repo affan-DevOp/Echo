@@ -86,9 +86,18 @@ export default async function handler(
       }
     });
 
+    const otherMember = conversation.memberOne.profileId === profile.id ? conversation.memberTwo : conversation.memberOne;
+
     const channelKey = `chat:${conversationId}:messages`;
 
     res?.socket?.server?.io?.emit(channelKey, message);
+    res?.socket?.server?.io?.emit("direct-message:new", {
+      conversationId,
+      recipientProfileId: otherMember.profileId,
+      senderMemberId: member.id,
+      recipientMemberId: otherMember.id,
+      message,
+    });
 
     return res.status(200).json(message);
   } catch (error) {

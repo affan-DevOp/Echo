@@ -63,6 +63,9 @@ const MemberIdPage = async ({
         name={otherMember.profile.name}
         serverId={serverId}
         type="conversation"
+        conversationId={conversation.id}
+        currentMember={currentMember}
+        otherMember={otherMember}
       />
       {video && (
         <MediaRoom
