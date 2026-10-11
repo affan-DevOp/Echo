@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LiveKitRoom, VideoConference } from "@livekit/components-react";
+import { LiveKitRoom } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { useUser } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
+import { MediaConference } from "@/components/media/media-conference";
 
 interface MediaRoomProps {
   chatId: string;
@@ -110,7 +111,7 @@ export const MediaRoom = ({
       onError={(err) => console.error("LiveKit room error:", err)}
       className="flex-1 flex flex-col h-full"
     >
-      <VideoConference />
+      <MediaConference video={video} />
     </LiveKitRoom>
   );
 };
